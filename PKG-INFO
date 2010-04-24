@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: ssh4py
+Version: 0.6.9
+Summary: SSH4Py is a Wrapper for LibSSH2 (SSH, SFTP, SCP)
+Home-page: http://www.keyphrene.com/
+Author: Keyphrene.com
+Author-email: support@keyphrene.com,vincent.jaulin@keyphrene.com
+License: LGPL
+Description: SSH4Py is a Wrapper for LibSSH2 (SSH, SFTP, SCP). Org.keyphrene has been splited to several simple projects.
+        
+Platform: UNKNOWN
