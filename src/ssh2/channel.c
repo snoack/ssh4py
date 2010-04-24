@@ -371,13 +371,6 @@ SSH2_Channel_pollWrite(SSH2_ChannelObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
-static char SSH2_Channel_getSocket_doc[] = "";
-
-static PyObject *
-SSH2_Channel_getSocket(SSH2_ChannelObj *self, PyObject *args) {
-	return PyInt_FromLong((int)(self->channel->session->socket_fd));
-}
-
 /*
  * ADD_METHOD(name) expands to a correct PyMethodDef declaration
  *   {  'name', (PyCFunction)SSH2_Channel_name, METH_VARARGS }
@@ -402,7 +395,6 @@ static PyMethodDef SSH2_Channel_methods[] =
 	ADD_METHOD(windowRead),
 	ADD_METHOD(windowWrite),
 	ADD_METHOD(pollRead),
-	ADD_METHOD(getSocket),
     { NULL, NULL }
 };
 #undef ADD_METHOD

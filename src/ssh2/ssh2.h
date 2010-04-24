@@ -10,8 +10,8 @@
 #define PyOpenSSL_SSH2_H_
 
 #include <Python.h>
-#include "libssh2_priv.h"
-#include "libssh2_sftp.h"
+#include <libssh2.h>
+#include <libssh2_sftp.h>
 #include "session.h"
 #include "channel.h"
 #include "sftp.h"

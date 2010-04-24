@@ -8,7 +8,7 @@
 #define PyOpenSSL_SSH2_Listener_H_
 
 #include <Python.h>
-#include "libssh2_priv.h"
+#include <libssh2.h>
 
 extern  int       init_SSH2_Listener   (PyObject *);
 
