@@ -63,15 +63,13 @@ SSH2_Channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 	int ret;
 	int w = 80;
 	int h = 24;
-	int pw = 0;
-	int ph = 0;
 	
 	
-	if (!PyArg_ParseTuple(args, "ii|ii:pty_size", &w, &h, &pw, &ph))
+	if (!PyArg_ParseTuple(args, "ii:pty_size", &w, &h))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
-	ret = libssh2_channel_request_pty_size(self->channel, w, h, pw, ph);
+	ret = libssh2_channel_request_pty_size(self->channel, w, h);
 	MY_END_ALLOW_THREADS(self->tstate);
 
 	
