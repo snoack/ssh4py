@@ -251,6 +251,22 @@ SSH2_Session_setCallback(SSH2_SessionObj *self, PyObject *args)
     return Py_None;
 }
 
+static char SSH2_Session_setBlocking_doc[] = "";
+
+static PyObject *
+SSH2_Session_setBlocking(SSH2_SessionObj *self, PyObject *args)
+{
+	int blocking;
+
+	if (!PyArg_ParseTuple(args, "i:setBlocking", &blocking))
+        return NULL;
+
+	libssh2_session_set_blocking(self->session, blocking);
+
+	Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static char SSH2_Session_Channel_doc[] = "";
 
 static PyObject *
@@ -425,6 +441,7 @@ static PyMethodDef SSH2_Session_methods[] =
 	ADD_METHOD(getMethods),
 	ADD_METHOD(setMethod),
 	ADD_METHOD(setCallback),
+	ADD_METHOD(setBlocking),
 	ADD_METHOD(Channel),
 	ADD_METHOD(SFTP),
 	ADD_METHOD(SCPGet),
