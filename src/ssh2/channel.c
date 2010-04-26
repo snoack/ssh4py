@@ -369,6 +369,23 @@ SSH2_Channel_pollWrite(SSH2_ChannelObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
+static char SSH2_Channel_getExitStatus_doc[] = "";
+
+static PyObject *
+SSH2_Channel_getExitStatus(SSH2_ChannelObj *self, PyObject *args)
+{
+	int ret;
+
+	if (!PyArg_ParseTuple(args, ":getExitStatus"))
+		return NULL;
+
+	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	ret = libssh2_channel_get_exit_status(self->channel);
+	MY_END_ALLOW_THREADS(self->tstate);
+
+	return PyInt_FromLong(ret);
+}
+
 /*
  * ADD_METHOD(name) expands to a correct PyMethodDef declaration
  *   {  'name', (PyCFunction)SSH2_Channel_name, METH_VARARGS }
@@ -393,6 +410,7 @@ static PyMethodDef SSH2_Channel_methods[] =
 	ADD_METHOD(windowRead),
 	ADD_METHOD(windowWrite),
 	ADD_METHOD(pollRead),
+	ADD_METHOD(getExitStatus),
     { NULL, NULL }
 };
 #undef ADD_METHOD
