@@ -31,13 +31,13 @@ if sys.argv[1] == "build":
 			try:
 				os.rmdir(os.path.join(root, name))
 			except: pass
-				
+
 	# To force recreate a MANIFEST file
 	if os.path.isfile("./MANIFEST.in"):
 		os.remove("./MANIFEST.in")
-	
+
 # SSH Wrapper
-ssh2_src = ['src/ssh2/ssh2.c', 'src/ssh2/session.c', 'src/ssh2/channel.c', 
+ssh2_src = ['src/ssh2/ssh2.c', 'src/ssh2/session.c', 'src/ssh2/channel.c',
 	'src/ssh2/sftp.c', 'src/ssh2/sftphandle.c', 'src/ssh2/listener.c']
 ssh2_dep = ['src/ssh2/ssh2.h', 'src/ssh2/session.h', 'src/ssh2/channel.h',
 	'src/ssh2/sftp.h', 'src/ssh2/sftphandle.h', 'src/ssh2/listener.h']
@@ -70,10 +70,10 @@ if sys.platform == 'darwin':
 ext_SSH2 = Extension('ssh4py.SSH2',
 		sources = ssh2_src,
 		depends = ssh2_dep,
-		include_dirs = IncludeDirs, 
+		include_dirs = IncludeDirs,
 		library_dirs = LibraryDirs,
 		libraries = Libraries,
-		extra_compile_args = ExtraCompileArgs, 
+		extra_compile_args = ExtraCompileArgs,
 		extra_link_args = ExtraLinkArgs)
 
 ext_all_os_modules = [ext_SSH2]
@@ -92,7 +92,7 @@ setup(name=__project__, version=__version__,
      )
 
 if sys.argv[1] == "build":
-	if sys.platform == "win32":	
+	if sys.platform == "win32":
 		for i in [LIB_OPENSSL+"/out32dll/libeay32.dll", LIB_OPENSSL+"/out32dll/ssleay32.dll", LIB_ZLIB+"/zlib1.dll"]:
 			if os.path.isfile(i):
 				print "Copy %s in %s" % (i, _build)

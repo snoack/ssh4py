@@ -25,9 +25,9 @@ Returns:   A Session\n\
 
 static PyObject *
 SSH2_Session(PyObject *spam, PyObject *args)
-{	
+{
     int dealloc = 1;
-	
+
     if (!PyArg_ParseTuple(args, "|i:Session", &dealloc))
         return NULL;
 
@@ -46,40 +46,40 @@ Returns:   A Session\n\
 
 static PyObject *
 SSH2_Channel(PyObject *spam, PyObject *args)
-{	
+{
 	SSH2_SessionObj *session;
     LIBSSH2_CHANNEL *channel;
     int dealloc = 1;
-	
+
     if (!PyArg_ParseTuple(args, "O|i:Channel", &session, &dealloc))
         return NULL;
 
     MY_BEGIN_ALLOW_THREADS(session->tstate);
 	channel = libssh2_channel_open_session(session->session);
 	MY_END_ALLOW_THREADS(session->tstate);
-    
+
     if (channel == NULL) {
         return Py_None;
     }
-    
+
     return (PyObject *)SSH2_Channel_New(channel, dealloc);
 }
 
 static char SSH2_SFTP_doc[] = "";
 static PyObject *
 SSH2_SFTP(PyObject *spam, PyObject *args)
-{	
+{
 	SSH2_SessionObj *session;
     LIBSSH2_SFTP *sftp;
     int dealloc = 1;
-	
+
     if (!PyArg_ParseTuple(args, "O|i:SFTP", &session, &dealloc))
         return NULL;
 
     MY_BEGIN_ALLOW_THREADS(session->tstate);
     sftp = libssh2_sftp_init(session->session);
     MY_END_ALLOW_THREADS(session->tstate);
-    
+
     if (sftp == NULL) {
         return Py_None;
     }
@@ -134,11 +134,11 @@ initSSH2(void)
     PyModule_AddIntConstant(module, "FINGERPRINT_SHA1",  0x0001);
     PyModule_AddIntConstant(module, "FINGERPRINT_HEX",  0x0000);
     PyModule_AddIntConstant(module, "FINGERPRINT_RAW",  0x0002);
-    
+
     // for getFingerprint
     PyModule_AddIntConstant(module, "HOSTKEY_HASH_MD5",  LIBSSH2_HOSTKEY_HASH_MD5);
     PyModule_AddIntConstant(module, "HOSTKEY_HASH_SHA1",  LIBSSH2_HOSTKEY_HASH_SHA1);
-	
+
 	// methods
     PyModule_AddIntConstant(module, "METHOD_KEX",  LIBSSH2_METHOD_KEX);
     PyModule_AddIntConstant(module, "METHOD_HOSTKEY",  LIBSSH2_METHOD_HOSTKEY);
@@ -148,23 +148,23 @@ initSSH2(void)
     PyModule_AddIntConstant(module, "METHOD_MAC_SC",  LIBSSH2_METHOD_MAC_SC);
     PyModule_AddIntConstant(module, "METHOD_COMP_CS",  LIBSSH2_METHOD_COMP_CS);
     PyModule_AddIntConstant(module, "METHOD_COMP_SC",  LIBSSH2_METHOD_COMP_SC);
-    
+
 	PyModule_AddIntConstant(module, "SFTP_SYMLINK",  LIBSSH2_SFTP_SYMLINK);
 	PyModule_AddIntConstant(module, "SFTP_READLINK",  LIBSSH2_SFTP_READLINK);
 	PyModule_AddIntConstant(module, "SFTP_REALPATH",  LIBSSH2_SFTP_REALPATH);
-	
+
 	PyModule_AddIntConstant(module, "SFTP_STAT",  LIBSSH2_SFTP_STAT);
 	PyModule_AddIntConstant(module, "SFTP_LSTAT",  LIBSSH2_SFTP_LSTAT);
-    
+
 	PyModule_AddStringConstant(module, "DEFAULT_BANNER",  LIBSSH2_SSH_DEFAULT_BANNER);
 	PyModule_AddStringConstant(module, "LIBSSH2_VERSION",  LIBSSH2_VERSION);
-	
+
     PyModule_AddIntConstant(module, "CALLBACK_IGNORE",  LIBSSH2_CALLBACK_IGNORE);
     PyModule_AddIntConstant(module, "CALLBACK_DEBUG",  LIBSSH2_CALLBACK_DEBUG);
     PyModule_AddIntConstant(module, "CALLBACK_DISCONNECT",  LIBSSH2_CALLBACK_DISCONNECT);
     PyModule_AddIntConstant(module, "CALLBACK_MACERROR",  LIBSSH2_CALLBACK_MACERROR);
     PyModule_AddIntConstant(module, "CALLBACK_X11",  LIBSSH2_CALLBACK_X11);
-    
+
     dict = PyModule_GetDict(module);
     if (!init_SSH2_Session(dict))
         goto error;

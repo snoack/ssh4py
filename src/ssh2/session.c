@@ -15,10 +15,10 @@ static PyObject *
 SSH2_Session_setBanner(SSH2_SessionObj *self, PyObject *args)
 {
 	char *banner;
-	
+
 	if (!PyArg_ParseTuple(args, "s:setBanner", &banner))
 		return NULL;
-	
+
 	libssh2_banner_set(self->session, banner);
 	return PyInt_FromLong(1);
 }
@@ -32,19 +32,19 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 	PyObject *sock;
 	int ret;
 	int fd;
-	
+
 	if (!PyArg_ParseTuple(args, "O:startup", &sock))
 		return NULL;
-	
-	// Increment the reference count for socket object 
+
+	// Increment the reference count for socket object
 	Py_INCREF(sock);
     self->socket = sock;
 	fd = PyObject_AsFileDescriptor(sock);
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret=libssh2_session_startup(self->session, fd);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
@@ -62,14 +62,14 @@ SSH2_Session_close(SSH2_SessionObj *self, PyObject *args)
 {
 	char *reason = "end";
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "|s:disconnect", &reason))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_session_disconnect(self->session, reason);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if(ret) {
 		PyErr_SetString(SSH2_Error, "SSH disconnect error");
 	}
@@ -81,7 +81,7 @@ static char SSH2_Session_isAuthenticated_doc[] = "";
 
 static PyObject *
 SSH2_Session_isAuthenticated(SSH2_SessionObj *self, PyObject *args)
-{	
+{
 	return PyInt_FromLong(libssh2_userauth_authenticated(self->session));
 }
 
@@ -89,14 +89,14 @@ static char SSH2_Session_getAuthenticationMethods_doc[] = "";
 
 static PyObject *
 SSH2_Session_getAuthenticationMethods(SSH2_SessionObj *self, PyObject *args)
-{	
+{
 	char *user;
 	char *ret;
 	int len=0;
-	
+
 	if (!PyArg_ParseTuple(args, "s#:getAuthenticationMethods", &user, &len))
 		return NULL;
-	
+
 	ret = libssh2_userauth_list(self->session, user, len);
 	if (ret == NULL) {
 		return Py_None;
@@ -108,18 +108,18 @@ static char SSH2_Session_getFingerprint_doc[] = "";
 
 static PyObject *
 SSH2_Session_getFingerprint(SSH2_SessionObj *self, PyObject *args)
-{	
+{
 	/* hashtype Accept SSH2.HOSTKEY_HASH_MD5 | SSH2.HOSTKEY_HASH_SHA1 */
 	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5;
 	const char *hash;
-	
+
 	if (!PyArg_ParseTuple(args, "|i:getFingerprint", &hashtype))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	hash = libssh2_hostkey_hash(self->session, hashtype);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyString_FromString(hash);
 }
 
@@ -131,14 +131,14 @@ SSH2_Session_setPassword(SSH2_SessionObj *self, PyObject *args)
 	unsigned char *login;
 	unsigned char *pwd;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "ss:setPassword", &login, &pwd))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_userauth_password(self->session, login, pwd);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret==-1) {
 		PyErr_SetString(SSH2_Error, "Authentication by password failed.");
 		return NULL;
@@ -156,14 +156,14 @@ SSH2_Session_setPublicKey(SSH2_SessionObj *self, PyObject *args)
 	char *privatekey;
 	char *passphrase;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "sss|s:setPublicKey", &login, &publickey, &privatekey, &passphrase))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_userauth_publickey_fromfile(self->session, login, publickey, privatekey, passphrase);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
@@ -177,10 +177,10 @@ static char SSH2_Session_getMethods_doc[] = "";
 
 static PyObject *
 SSH2_Session_getMethods(SSH2_SessionObj *self, PyObject *args)
-{	
+{
 	const char *kex, *hostkey, *crypt_cs, *crypt_sc, *mac_cs, *mac_sc, *comp_cs, *comp_sc, *lang_cs, *lang_sc;
 	PyObject *methods;
-	
+
 	kex = libssh2_session_methods(self->session, LIBSSH2_METHOD_KEX);
 	hostkey = libssh2_session_methods(self->session, LIBSSH2_METHOD_HOSTKEY);
 	crypt_cs = libssh2_session_methods(self->session, LIBSSH2_METHOD_CRYPT_CS);
@@ -191,7 +191,7 @@ SSH2_Session_getMethods(SSH2_SessionObj *self, PyObject *args)
 	comp_sc = libssh2_session_methods(self->session, LIBSSH2_METHOD_COMP_SC);
 	lang_cs = libssh2_session_methods(self->session, LIBSSH2_METHOD_LANG_CS);
 	lang_sc = libssh2_session_methods(self->session, LIBSSH2_METHOD_LANG_SC);
-	
+
 	methods = PyDict_New();
 	PyDict_SetItemString(methods, "KEX", PyString_FromString(kex));
 	PyDict_SetItemString(methods, "HOSTKEY", PyString_FromString(hostkey));
@@ -203,7 +203,7 @@ SSH2_Session_getMethods(SSH2_SessionObj *self, PyObject *args)
 	PyDict_SetItemString(methods, "COMP_SC", PyString_FromString(comp_sc));
 	PyDict_SetItemString(methods, "LANG_CS", PyString_FromString(lang_cs));
 	PyDict_SetItemString(methods, "LANG_SC", PyString_FromString(lang_sc));
-	
+
 	return methods;
 }
 
@@ -211,10 +211,10 @@ static char SSH2_Session_setMethod_doc[] = "";
 
 static PyObject *
 SSH2_Session_setMethod(SSH2_SessionObj *self, PyObject *args)
-{	
+{
 	int method;
 	char *pref;
-	
+
 	if (!PyArg_ParseTuple(args, "is:setMethod", &method, &pref))
         return NULL;
 
@@ -232,21 +232,21 @@ SSH2_Session_setCallback(SSH2_SessionObj *self, PyObject *args)
 	// Don't work, not yet
 	int cbtype;
 	PyObject* callback;
-	
+
 	if (!PyArg_ParseTuple(args, "iO:setCallback", &cbtype, &callback))
         return NULL;
-	
+
 	if (!PyCallable_Check(callback)) {
         PyErr_SetString(PyExc_TypeError, "expected PyCallable");
         return NULL;
     }
-	
+
 	Py_DECREF(self->callback);
     Py_INCREF(callback);
     self->callback = callback;
-	
+
 	libssh2_session_callback_set(self->session, cbtype, global_callback);
-	
+
 	Py_INCREF(Py_None);
     return Py_None;
 }
@@ -258,21 +258,21 @@ SSH2_Session_Channel(SSH2_SessionObj *self, PyObject *args)
 {
 	int dealloc = 1;
 	LIBSSH2_CHANNEL *channel;
-	
+
 	if (!PyArg_ParseTuple(args, "|i:Channel", &dealloc))
         return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	channel = libssh2_channel_open_session(self->session);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (channel == NULL) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
 		PyErr_Format(SSH2_Error, "SSH channel error: %s", _err);
 		return NULL;
     }
-	
+
     return (PyObject *)SSH2_Channel_New(channel, dealloc);
 }
 
@@ -284,14 +284,14 @@ SSH2_Session_SCPGet(SSH2_SessionObj *self, PyObject *args)
 	char *path;
 	LIBSSH2_CHANNEL *channel;
 	//~ struct stat sb;
-		
+
 	if (!PyArg_ParseTuple(args, "s:SCPGet", &path))
         return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	channel = libssh2_scp_recv(self->session, path, NULL); // &sb
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (channel == NULL) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
@@ -310,14 +310,14 @@ SSH2_Session_SCPPut(SSH2_SessionObj *self, PyObject *args)
 	int mode;
 	unsigned long filesize;
 	LIBSSH2_CHANNEL *channel;
-	
+
 	if (!PyArg_ParseTuple(args, "sik:SCPPut", &path, &mode, &filesize))
         return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	channel = libssh2_scp_send(self->session, path, mode, filesize);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (channel == NULL) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
@@ -334,18 +334,18 @@ SSH2_Session_SFTP(SSH2_SessionObj *self, PyObject *args)
 {
 	int dealloc = 1;
 	LIBSSH2_SFTP *sftp;
-	
+
 	if (!PyArg_ParseTuple(args, "|i:SFTP", &dealloc))
         return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	sftp = libssh2_sftp_init(self->session);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (sftp == NULL) {
         return Py_None;
     }
-	
+
     return (PyObject *)SSH2_SFTP_New(sftp, dealloc);
 }
 
@@ -361,14 +361,14 @@ SSH2_Session_DirectTcpIP(SSH2_SessionObj *self, PyObject *args)
 	int port;
 	int sport = 22;
 	LIBSSH2_CHANNEL *channel;
-	
+
 	if (!PyArg_ParseTuple(args, "si|si:DirectTcpIP", &host, &port, &shost, &sport))
         return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	channel = libssh2_channel_direct_tcpip_ex(self->session, host, port, shost, sport);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (channel == NULL) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
@@ -389,14 +389,14 @@ SSH2_Session_ForwardListen(SSH2_SessionObj *self, PyObject *args)
 	int queue_maxsize;
 	int *bound_port;
 	LIBSSH2_LISTENER *listener;
-	
+
 	if (!PyArg_ParseTuple(args, "siii:ForwardListen", &host, &port, &bound_port, &queue_maxsize))
         return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	listener = libssh2_channel_forward_listen_ex(self->session, host, port, bound_port, queue_maxsize);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (listener == NULL) {
 		char *_err = "";
 		libssh2_session_last_error(self->session, &_err, NULL, 0);
@@ -461,7 +461,7 @@ SSH2_Session_New(LIBSSH2_SESSION *session, int dealloc)
 	self->tstate = NULL;
 	self->callback = Py_None;
     Py_INCREF(Py_None);
-	
+
 	libssh2_banner_set(session, LIBSSH2_SSH_DEFAULT_BANNER " Python");
 
     return self;
@@ -488,7 +488,7 @@ SSH2_Session_dealloc(SSH2_SessionObj *self)
 		Py_XDECREF(self->callback);
 		self->callback = NULL;
 	}
-	
+
 	Py_XDECREF(self->socket);
     self->socket = NULL;
 	if (self) {

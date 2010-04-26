@@ -14,11 +14,11 @@ static PyObject *
 SSH2_Listener_Accept(SSH2_ListenerObj *self, PyObject *args)
 {
 	LIBSSH2_CHANNEL *channel;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	channel = libssh2_channel_forward_accept(self->listener);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (channel == NULL) {
 		PyErr_SetString(SSH2_Error, "Accept error.");
 		return NULL;
@@ -30,13 +30,13 @@ static char SSH2_Listener_Cancel_doc[] = "";
 
 static PyObject *
 SSH2_Listener_Cancel(SSH2_ListenerObj *self, PyObject *args)
-{	
+{
 	int ret;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_forward_cancel(self->listener);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
     return PyInt_FromLong(ret);
 }
 
@@ -77,7 +77,7 @@ SSH2_Listener_New(LIBSSH2_LISTENER *listener, int dealloc)
     self->listener = listener;
     self->dealloc = dealloc;
 	self->tstate = NULL;
-	
+
     return self;
 }
 

@@ -38,7 +38,7 @@ PyObject *
 get_attrs(LIBSSH2_SFTP_ATTRIBUTES *attr)
 {
 	PyObject *attrs=NULL;
-	
+
 	attrs = PyList_New(0);
 	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->filesize));
 	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->uid));
@@ -46,7 +46,7 @@ get_attrs(LIBSSH2_SFTP_ATTRIBUTES *attr)
 	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->permissions));
 	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->atime));
 	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->mtime));
-	
+
 	return attrs;
 }
 
@@ -58,14 +58,14 @@ SSH2_SFTP_close(SSH2_SFTPObj *self, PyObject *args)
 {
 	SSH2_SFTP_handleObj *handle;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "O:close", &handle))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_close_handle(handle->sftphandle);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret) {
 		PyErr_SetString(SSH2_Error, "Unable to close the handle.");
 		return NULL;
@@ -80,14 +80,14 @@ SSH2_SFTP_openDir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_HANDLE *handle;
 	char *path;
-	
+
 	if (!PyArg_ParseTuple(args, "s:openDir", &path))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	handle = libssh2_sftp_opendir(self->sftp, path);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (handle == NULL) {
 		PyErr_SetString(SSH2_Error, "Unable to open directory.");
 		return NULL;
@@ -106,17 +106,17 @@ SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
 	int lenmax=255; // unsigned long
 	PyObject *buf;
 	PyObject *list=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "O:readDir", &handle))
 		return NULL;
-	
+
 	buf = PyString_FromStringAndSize(NULL, lenmax);
     if (buf == NULL) return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (len == 0) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -125,11 +125,11 @@ SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
 		PyErr_SetString(SSH2_Error, "Unable to readdir.");
 		return NULL;
 	}
-	
+
 	if (len != lenmax && _PyString_Resize(&buf, len) < 0) {
 		return NULL;
 	}
-	
+
 	list = PyList_New(0);
 	PyList_Append(list, buf);
 	PyList_Append(list, get_attrs(&attr));
@@ -143,42 +143,42 @@ SSH2_SFTP_listDir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
-	int len=0; 
+	int len=0;
 	int lenmax=255;
 	PyObject *buf;
 	PyObject *all=NULL;
 	PyObject *list=NULL;
-	
+
 	if (!PyArg_ParseTuple(args, "O:listDir", &handle))
 		return NULL;
-	
+
 	all = PyList_New(0);
 	while (1) {
 		buf = PyString_FromStringAndSize(NULL, lenmax);
 		if (buf == NULL) return NULL;
-	
+
 		MY_BEGIN_ALLOW_THREADS(self->tstate);
 		len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
 		MY_END_ALLOW_THREADS(self->tstate);
-		
+
 		if (len == 0) { break; }
 		else if (len == -1) {
 			PyErr_SetString(SSH2_Error, "Unable to readdir.");
 			return NULL;
-		}	
+		}
 		if (len != lenmax && _PyString_Resize(&buf, len) < 0) {
 			return NULL;
 		}
-		
+
 		list = PyList_New(0);
 		PyList_Append(list, buf);
 		PyList_Append(list, get_attrs(&attr));
-		
-		
+
+
 		PyList_Append(all, list);
 	}
-	
-	
+
+
 	return all;
 }
 
@@ -191,19 +191,19 @@ SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 	char *path;
 	char *flags = "r";
 	long mode = 0755;
-	
+
 	if (!PyArg_ParseTuple(args, "s|si:open", &path, &flags, &mode))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	handle = libssh2_sftp_open(self->sftp, path, get_flags(flags), mode);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (handle == NULL) {
 		PyErr_SetString(SSH2_Error, "Unable to open.");
 		return NULL;
 	}
-	
+
 	return (PyObject *)SSH2_SFTP_handle_New(handle, 1);
 }
 
@@ -217,7 +217,7 @@ SSH2_SFTP_shutdown(SSH2_SFTPObj *self, PyObject *args)
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_shutdown(self->sftp);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret == -1) {
 		PyErr_SetString(SSH2_Error, "Unable to shutdown.");
 		return NULL;
@@ -229,29 +229,29 @@ static char SSH2_SFTP_read_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
-{	
+{
 	int bufsiz, ret=0;
 	PyObject *buf;
 	SSH2_SFTP_handleObj *handle;
-	
+
 	if (!PyArg_ParseTuple(args, "Oi:read", &handle, &bufsiz))
 		return NULL;
-	
+
 	buf = PyString_FromStringAndSize(NULL, bufsiz);
     if (buf == NULL)
         return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_read(handle->sftphandle, PyString_AsString(buf), bufsiz);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret > 0) {
 		if (ret != bufsiz && _PyString_Resize(&buf, ret) < 0) {
 			return NULL;
 		}
 		return buf;
 	}
-	
+
 	Py_DECREF(buf);
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -261,18 +261,18 @@ static char SSH2_SFTP_write_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
-{	
+{
 	char *msg;
 	int len, ret=0;
 	SSH2_SFTP_handleObj *handle;
-	
+
 	if (!PyArg_ParseTuple(args, "Os#:write", &handle, &msg, &len))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_write(handle->sftphandle, msg, len);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret < 0) {
 		PyErr_Format(SSH2_Error, "Unable to write. %d", libssh2_sftp_last_error(self->sftp));
 		return NULL;
@@ -284,17 +284,17 @@ static char SSH2_SFTP_tell_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
-{	
+{
 	int ret;
 	SSH2_SFTP_handleObj *handle;
-	
+
 	if (!PyArg_ParseTuple(args, "O:tell", &handle))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_tell(handle->sftphandle);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyInt_FromLong(ret);
 }
 
@@ -302,17 +302,17 @@ static char SSH2_SFTP_seek_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
-{	
+{
 	SSH2_SFTP_handleObj *handle;
 	unsigned long offset=0;
-	
+
 	if (!PyArg_ParseTuple(args, "Ok:seek", &handle, &offset))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	libssh2_sftp_seek(handle->sftphandle, offset);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyInt_FromLong(1);
 }
 
@@ -323,14 +323,14 @@ SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "s:unlink", &path))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_unlink(self->sftp, path);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyInt_FromLong(ret);
 }
 
@@ -342,14 +342,14 @@ SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 	char *src;
 	char *dst;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "ss:rename", &src, &dst))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_rename(self->sftp, src, dst);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyInt_FromLong(ret);
 }
 
@@ -361,14 +361,14 @@ SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 	char *path;
 	long mode = 0755;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "s|i:mkdir", &path, &mode))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_mkdir(self->sftp, path, mode);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyInt_FromLong(ret);
 }
 
@@ -379,14 +379,14 @@ SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	int ret;
-	
+
 	if (!PyArg_ParseTuple(args, "s:rmdir", &path))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_rmdir(self->sftp, path);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	return PyInt_FromLong(ret);
 }
 
@@ -399,26 +399,26 @@ SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 	int lpath=0, ret=0, len=1024;
 	PyObject *target;
 	int type = LIBSSH2_SFTP_REALPATH;
-	
+
 	if (!PyArg_ParseTuple(args, "s#|i:realpath", &path, &lpath, &type))
 		return NULL;
-	
-	
+
+
 	target = PyString_FromStringAndSize(NULL, len);
     if (target == NULL)
         return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_symlink_ex(self->sftp, path, lpath, PyString_AsString(target), len, type);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret > 0) {
 		if (ret != len && _PyString_Resize(&target, ret) < 0) {
 			return NULL;
 		}
 		return target;
 	}
-	
+
 	Py_DECREF(target);
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -432,20 +432,20 @@ SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 	char *path;
 	char *target;
 	int ret=0;
-	
+
 	if (!PyArg_ParseTuple(args, "ss:symlink", &path, &target))
 		return NULL;
-	
-	
+
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_symlink(self->sftp, path, target);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret == -1) {
 		PyErr_SetString(SSH2_Error, "Unable to symlink.");
 		return NULL;
 	}
-	
+
 	return PyInt_FromLong(1);
 }
 
@@ -455,25 +455,25 @@ static char SSH2_SFTP_getStat_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_getStat(SSH2_SFTPObj *self, PyObject *args)
-{	
+{
 	unsigned char *path;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	int ret;
 	int lpath = 0;
 	int type = LIBSSH2_SFTP_STAT;
-	
+
 	if (!PyArg_ParseTuple(args, "s#|i:getStat", &path, &lpath, &type))
 		return NULL;
-	
+
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_stat_ex(self->sftp, path, lpath, type, &attr);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret == -1) {
 		PyErr_SetString(SSH2_Error, "Unable to stat.");
 		return NULL;
 	}
-	
+
 	return get_attrs(&attr);
 }
 
@@ -481,23 +481,23 @@ static char SSH2_SFTP_setStat_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
-{	
+{
 	char *path;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	PyObject *attrs;
 	int ret;
-	
+
 	//~ printf("%s\n", PyString_AsString(PyObject_Str(args)));
-	
+
 	if (!PyArg_ParseTuple(args, "sO:setStat", &path, &attrs))
 		return NULL;
-	
+
 	attr.flags = 0;
 	if (PyMapping_HasKeyString(attrs, "perms")) {
 		attr.flags |= LIBSSH2_SFTP_ATTR_PERMISSIONS;
 		attr.permissions = PyLong_AsLong(PyDict_GetItemString(attrs, "perms"));
 	}
-	
+
 	if (PyMapping_HasKeyString(attrs, "uid") && PyMapping_HasKeyString(attrs, "gid")) {
 		if (PyMapping_HasKeyString(attrs, "uid")) {
 			attr.flags |= LIBSSH2_SFTP_ATTR_UIDGID;
@@ -508,7 +508,7 @@ SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
 			attr.gid = PyLong_AsLong(PyDict_GetItemString(attrs, "gid"));
 		}
 	}
-	
+
 	if (PyMapping_HasKeyString(attrs, "atime") && PyMapping_HasKeyString(attrs, "ctime")) {
 		if (PyMapping_HasKeyString(attrs, "atime")) {
 			attr.flags |= LIBSSH2_SFTP_ATTR_ACMODTIME;
@@ -523,12 +523,12 @@ SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_sftp_setstat(self->sftp, path, &attr);
 	MY_END_ALLOW_THREADS(self->tstate);
-	
+
 	if (ret == -1) {
 		PyErr_SetString(SSH2_Error, "Unable to stat.");
 		return NULL;
 	}
-	
+
 	return PyInt_FromLong(1);
 }
 

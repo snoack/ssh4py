@@ -56,7 +56,7 @@ SSH2_SFTP_handle_dealloc(SSH2_SFTP_handleObj *self)
 {
     //~ if (self->dealloc)
 		//~ free(self->sftphandle);
-	
+
     PyObject_Del(self);
 }
 
