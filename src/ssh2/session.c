@@ -267,7 +267,10 @@ SSH2_Session_Channel(SSH2_SessionObj *self, PyObject *args)
 	MY_END_ALLOW_THREADS(self->tstate);
 	
 	if (channel == NULL) {
-        return Py_None;
+		char *_err = "";
+		libssh2_session_last_error(self->session, &_err, NULL, 0);
+		PyErr_Format(SSH2_Error, "SSH channel error: %s", _err);
+		return NULL;
     }
 	
     return (PyObject *)SSH2_Channel_New(channel, dealloc);
