@@ -17,8 +17,8 @@ spell4py: Hunspell (1.1.4)
 
 == Installation ==
 
-python setup_<project>.py build
-python setup_<project>.py install
+python setup.py build
+python setup.py install (as root)
 
 
 == Others projects ==
