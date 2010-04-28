@@ -1,31 +1,25 @@
+== Depenendencies ==
 
-= Keyphrene Products =
-
-== Informations ==
-
-Keyphrene
-website: http://www.keyphrene.com
-Author: vincent.jaulin@keyphrene.com
-Copyright: 2002-2008
-License: LGPL
-
-== Requisite Libraries ==
-
-ssl4py: OpenSSL (0.9.8 or later)
-ssh4py: LibSSH2 (0.18 or later), Zlib (1.2.x or later)
-spell4py: Hunspell (1.1.4)
+- Python (2.4 or later)
+- libssh2 (1.2.5 or later)
+- zlib (1.2.x or later)
 
 == Installation ==
 
 python setup.py build
 python setup.py install (as root)
 
+== License ==
 
-== Others projects ==
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation.
 
-ssl4py: Binding for OpenSSL
-ssh4py: Binding for LibSSH2
-spell4py: Binding for Hunspell
-org.keyphrene: Contains all this projects and others
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-are been released on http://www.keyphrene.com
+== Authors ==
+
+Sebastian Noack <sebastian.noack@gmail.com>
+Vincent Jaulin <vincent.jaulin@keyphrene.com>
