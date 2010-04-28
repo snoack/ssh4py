@@ -99,7 +99,7 @@ SSH2_Session_getAuthenticationMethods(SSH2_SessionObj *self, PyObject *args)
 
 	ret = libssh2_userauth_list(self->session, user, len);
 	if (ret == NULL) {
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 	return PyString_FromString(ret);
 }
@@ -247,8 +247,7 @@ SSH2_Session_setCallback(SSH2_SessionObj *self, PyObject *args)
 
 	libssh2_session_callback_set(self->session, cbtype, global_callback);
 
-	Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static char SSH2_Session_getBlocking_doc[] = "";
@@ -278,8 +277,7 @@ SSH2_Session_setBlocking(SSH2_SessionObj *self, PyObject *args)
 
 	libssh2_session_set_blocking(self->session, blocking);
 
-	Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 
@@ -375,7 +373,7 @@ SSH2_Session_SFTP(SSH2_SessionObj *self, PyObject *args)
 	MY_END_ALLOW_THREADS(self->tstate);
 
 	if (sftp == NULL) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     return (PyObject *)SSH2_SFTP_New(sftp, dealloc);

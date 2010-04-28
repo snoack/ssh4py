@@ -161,8 +161,7 @@ SSH2_Channel_setBlocking(SSH2_ChannelObj *self, PyObject *args)
 	libssh2_channel_set_blocking(self->channel, b);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_read_doc[] = "";
@@ -200,8 +199,7 @@ SSH2_Channel_read(SSH2_ChannelObj *self, PyObject *args)
 	}
 
 	Py_DECREF(buf);
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_write_doc[] = "";

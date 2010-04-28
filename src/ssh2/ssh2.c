@@ -59,7 +59,7 @@ SSH2_Channel(PyObject *spam, PyObject *args)
 	MY_END_ALLOW_THREADS(session->tstate);
 
     if (channel == NULL) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
 
     return (PyObject *)SSH2_Channel_New(channel, dealloc);
@@ -81,8 +81,9 @@ SSH2_SFTP(PyObject *spam, PyObject *args)
     MY_END_ALLOW_THREADS(session->tstate);
 
     if (sftp == NULL) {
-        return Py_None;
+        Py_RETURN_NONE;
     }
+
     return (PyObject *)SSH2_SFTP_New(sftp, dealloc);
 }
 

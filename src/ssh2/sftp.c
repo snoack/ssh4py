@@ -118,8 +118,7 @@ SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
 	MY_END_ALLOW_THREADS(self->tstate);
 
 	if (len == 0) {
-		Py_INCREF(Py_None);
-		return Py_None;
+		Py_RETURN_NONE;
 	}
 	else if (len == -1) {
 		PyErr_SetString(SSH2_Error, "Unable to readdir.");
@@ -253,8 +252,7 @@ SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 	}
 
 	Py_DECREF(buf);
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_write_doc[] = "";
@@ -420,8 +418,7 @@ SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 	}
 
 	Py_DECREF(target);
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_symlink_doc[] = "";
