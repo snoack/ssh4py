@@ -386,6 +386,50 @@ SSH2_Channel_getExitStatus(SSH2_ChannelObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
+static char SSH2_Channel_waitClosed_doc[] = "";
+
+static PyObject *
+SSH2_Channel_waitClosed(SSH2_ChannelObj *self, PyObject *args)
+{
+	int ret;
+
+	if (!PyArg_ParseTuple(args, ":waitClosed"))
+		return NULL;
+
+	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	ret = libssh2_channel_wait_closed(self->channel);
+	MY_END_ALLOW_THREADS(self->tstate);
+
+	if (ret) {
+		PyErr_SetString(SSH2_Error, "Unable to wait.");
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+static char SSH2_Channel_waitEof_doc[] = "";
+
+static PyObject *
+SSH2_Channel_waitEof(SSH2_ChannelObj *self, PyObject *args)
+{
+	int ret;
+
+	if (!PyArg_ParseTuple(args, ":waitEof"))
+		return NULL;
+
+	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	ret = libssh2_channel_wait_eof(self->channel);
+	MY_END_ALLOW_THREADS(self->tstate);
+
+	if (ret) {
+		PyErr_SetString(SSH2_Error, "Unable to wait.");
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 /*
  * ADD_METHOD(name) expands to a correct PyMethodDef declaration
  *   {  'name', (PyCFunction)SSH2_Channel_name, METH_VARARGS }
@@ -411,6 +455,8 @@ static PyMethodDef SSH2_Channel_methods[] =
 	ADD_METHOD(windowWrite),
 	ADD_METHOD(pollRead),
 	ADD_METHOD(getExitStatus),
+	ADD_METHOD(waitClosed),
+	ADD_METHOD(waitEof),
     { NULL, NULL }
 };
 #undef ADD_METHOD
