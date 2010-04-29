@@ -32,11 +32,19 @@ extern PyObject *SSH2_Error;
 #endif
 
 #define HANDLE_SESSION_ERROR(cond, session_obj) \
-if (cond) {\
-	char *_err = "";\
-	libssh2_session_last_error(session_obj->session, &_err, NULL, 0);\
-	PyErr_SetString(SSH2_Error, _err);\
-	return NULL;\
+if (cond) { \
+	char*     _errmsg     = ""; \
+	int       _errmsg_len = 0; \
+	int       _errno; \
+	PyObject* _exc; \
+\
+	_errno = libssh2_session_last_error(session_obj->session, &_errmsg, &_errmsg_len, 0); \
+	_exc   = PyObject_Call(SSH2_Error, Py_BuildValue("(s#)", _errmsg, _errmsg_len), NULL); \
+\
+	PyObject_SetAttrString(_exc, "errno", PyInt_FromLong(_errno)); \
+	PyErr_SetObject(SSH2_Error, _exc); \
+\
+	return NULL; \
 }
 
 #ifdef exception_from_error_queue
