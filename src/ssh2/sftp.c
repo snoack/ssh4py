@@ -313,7 +313,9 @@ SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_unlink(self->sftp, path);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	return PyInt_FromLong(ret);
+	HANDLE_SESSION_ERROR(ret < 0, self->session);
+
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_rename_doc[] = "";
@@ -332,7 +334,9 @@ SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_rename(self->sftp, src, dst);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	return PyInt_FromLong(ret);
+	HANDLE_SESSION_ERROR(ret < 0, self->session);
+
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_mkdir_doc[] = "";
@@ -351,7 +355,9 @@ SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_mkdir(self->sftp, path, mode);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	return PyInt_FromLong(ret);
+	HANDLE_SESSION_ERROR(ret < 0, self->session);
+
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_rmdir_doc[] = "";
@@ -369,7 +375,9 @@ SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_rmdir(self->sftp, path);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	return PyInt_FromLong(ret);
+	HANDLE_SESSION_ERROR(ret < 0, self->session);
+
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_realpath_doc[] = "";
