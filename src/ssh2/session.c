@@ -37,10 +37,10 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O:startup", &sock))
 		return NULL;
 
-	// Increment the reference count for socket object
-	Py_INCREF(sock);
-    self->socket = sock;
-	fd = PyObject_AsFileDescriptor(sock);
+	if ((fd = PyObject_AsFileDescriptor(sock)) == -1) {
+		PyErr_SetString(PyExc_ValueError, "argument must be a file descriptor");
+		return NULL;
+	}
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret=libssh2_session_startup(self->session, fd);
@@ -48,6 +48,8 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
+	Py_INCREF(sock);
+    self->socket = sock;
 	self->opened = 1;
 
 	Py_RETURN_NONE;
