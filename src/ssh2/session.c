@@ -207,13 +207,18 @@ static char SSH2_Session_setMethod_doc[] = "";
 static PyObject *
 SSH2_Session_setMethod(SSH2_SessionObj *self, PyObject *args)
 {
+	int ret;
 	int method;
 	char *pref;
 
 	if (!PyArg_ParseTuple(args, "is:setMethod", &method, &pref))
         return NULL;
 
-	return PyInt_FromLong(libssh2_session_method_pref(self->session, method, pref)==0? 1:0);
+	ret = libssh2_session_method_pref(self->session, method, pref);
+
+	HANDLE_SESSION_ERROR(ret < 0, self);
+
+	Py_RETURN_NONE;
 }
 
 static int global_callback() {

@@ -35,7 +35,9 @@ SSH2_Listener_Cancel(SSH2_ListenerObj *self, PyObject *args)
 	ret = libssh2_channel_forward_cancel(self->listener);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-    return PyInt_FromLong(ret);
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
+	Py_RETURN_NONE;
 }
 
 
