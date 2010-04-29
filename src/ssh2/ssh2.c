@@ -62,7 +62,7 @@ SSH2_Channel(PyObject *spam, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return (PyObject *)SSH2_Channel_New(channel, dealloc);
+    return (PyObject *)SSH2_Channel_New(channel, session, dealloc);
 }
 
 static char SSH2_SFTP_doc[] = "";
@@ -84,7 +84,7 @@ SSH2_SFTP(PyObject *spam, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return (PyObject *)SSH2_SFTP_New(sftp, dealloc);
+    return (PyObject *)SSH2_SFTP_New(sftp, session, dealloc);
 }
 
 /* Methods in the OpenSSL.ssh module (i.e. none) */

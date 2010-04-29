@@ -20,10 +20,8 @@ SSH2_Channel_close(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_close(self->channel);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Unable to close the channel");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -49,10 +47,8 @@ SSH2_Channel_pty(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_request_pty_ex(self->channel, term, lt, modes, lm, w, h, pw, ph);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Failed requesting pty.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -72,14 +68,8 @@ SSH2_Channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_request_pty_size(self->channel, w, h);
 	MY_END_ALLOW_THREADS(self->tstate);
 
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	if (ret) {
- 		//~ char *_err = "";
-		//~ libssh2_session_last_error(self->channel->session, &_err, NULL, 0);
-		//~ PyErr_Format(SSH2_Error, "PTY window-change: %s", _err);
-		PyErr_SetString(SSH2_Error, "Failed requesting pty size.");
-		return NULL;
-	}
 	return PyInt_FromLong(1);
 }
 
@@ -94,10 +84,8 @@ SSH2_Channel_shell(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_shell(self->channel);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Unable to request shell on allocated pty.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -116,10 +104,8 @@ SSH2_Channel_execute(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_exec(self->channel, cmd);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Unable to request exec command.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -140,10 +126,8 @@ SSH2_Channel_setEnv(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_setenv(self->channel, key, val);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to set environment variable.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -218,10 +202,8 @@ SSH2_Channel_write(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_write(self->channel, msg, len);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to write.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(ret);
 }
 
@@ -235,10 +217,9 @@ SSH2_Channel_flush(SSH2_ChannelObj *self, PyObject *args)
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_flush(self->channel);
 	MY_END_ALLOW_THREADS(self->tstate);
-	if ( ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to flush.");
-		return NULL;
-	}
+
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(ret);
 }
 
@@ -261,10 +242,8 @@ SSH2_Channel_sendEof(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_send_eof(self->channel);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to send an EOF.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(ret);
 }
 
@@ -398,10 +377,7 @@ SSH2_Channel_waitClosed(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_wait_closed(self->channel);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Unable to wait.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -420,10 +396,7 @@ SSH2_Channel_waitEof(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_wait_eof(self->channel);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Unable to wait.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -464,21 +437,22 @@ static PyMethodDef SSH2_Channel_methods[] =
  * Constructor for Channel objects, never called by Python code directly
  *
  * Arguments: cert    - A "real" Channel certificate object
+ *            session - The Python object reperesenting the session
  *            dealloc - Boolean value to specify whether the destructor should
  *                      free the "real" Channel object
  * Returns:   The newly created Channel object
  */
 SSH2_ChannelObj *
-SSH2_Channel_New(LIBSSH2_CHANNEL *channel, int dealloc)
+SSH2_Channel_New(LIBSSH2_CHANNEL *channel, SSH2_SessionObj *session, int dealloc)
 {
     SSH2_ChannelObj *self;
 
-    self = PyObject_New(SSH2_ChannelObj, &SSH2_Channel_Type);
-
-    if (self == NULL)
-        return NULL;
+	if ((self = PyObject_New(SSH2_ChannelObj, &SSH2_Channel_Type)) == NULL)
+		return NULL;
 
     self->channel = channel;
+	self->session = session;
+	Py_INCREF(session);
 	self->tstate = NULL;
     self->dealloc = dealloc;
 
@@ -499,6 +473,10 @@ SSH2_Channel_dealloc(SSH2_ChannelObj *self)
         //~ libssh2_channel_free(self->channel);
 
 	self->channel = NULL;
+
+	Py_DECREF(self->session);
+	self->session = NULL;
+
     PyObject_Del(self);
 }
 

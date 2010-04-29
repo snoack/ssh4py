@@ -66,10 +66,8 @@ SSH2_SFTP_close(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_close_handle(handle->sftphandle);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		PyErr_SetString(SSH2_Error, "Unable to close the handle.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -88,10 +86,8 @@ SSH2_SFTP_openDir(SSH2_SFTPObj *self, PyObject *args)
 	handle = libssh2_sftp_opendir(self->sftp, path);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (handle == NULL) {
-		PyErr_SetString(SSH2_Error, "Unable to open directory.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(handle == NULL, self->session)
+
 	return (PyObject *)SSH2_SFTP_handle_New(handle, 1);
 }
 
@@ -117,17 +113,13 @@ SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
 	len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (len == 0) {
+	if (len == 0)
 		Py_RETURN_NONE;
-	}
-	else if (len == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to readdir.");
-		return NULL;
-	}
 
-	if (len != lenmax && _PyString_Resize(&buf, len) < 0) {
+	HANDLE_SESSION_ERROR(len < 0, self->session)
+
+	if (len != lenmax && _PyString_Resize(&buf, len) < 0)
 		return NULL;
-	}
 
 	list = PyList_New(0);
 	PyList_Append(list, buf);
@@ -160,14 +152,13 @@ SSH2_SFTP_listDir(SSH2_SFTPObj *self, PyObject *args)
 		len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
 		MY_END_ALLOW_THREADS(self->tstate);
 
-		if (len == 0) { break; }
-		else if (len == -1) {
-			PyErr_SetString(SSH2_Error, "Unable to readdir.");
+		if (len == 0)
+			break;
+
+		HANDLE_SESSION_ERROR(len < 0, self->session)
+
+		if (len != lenmax && _PyString_Resize(&buf, len) < 0)
 			return NULL;
-		}
-		if (len != lenmax && _PyString_Resize(&buf, len) < 0) {
-			return NULL;
-		}
 
 		list = PyList_New(0);
 		PyList_Append(list, buf);
@@ -198,10 +189,7 @@ SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 	handle = libssh2_sftp_open(self->sftp, path, get_flags(flags), mode);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (handle == NULL) {
-		PyErr_SetString(SSH2_Error, "Unable to open.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
 	return (PyObject *)SSH2_SFTP_handle_New(handle, 1);
 }
@@ -217,10 +205,8 @@ SSH2_SFTP_shutdown(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_shutdown(self->sftp);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to shutdown.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(1);
 }
 
@@ -271,10 +257,8 @@ SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_write(handle->sftphandle, msg, len);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret < 0) {
-		PyErr_Format(SSH2_Error, "Unable to write. %d", libssh2_sftp_last_error(self->sftp));
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
 	return PyInt_FromLong(ret);
 }
 
@@ -438,10 +422,7 @@ SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_symlink(self->sftp, path, target);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to symlink.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
 	return PyInt_FromLong(1);
 }
@@ -466,10 +447,7 @@ SSH2_SFTP_getStat(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_stat_ex(self->sftp, path, lpath, type, &attr);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to stat.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
 	return get_attrs(&attr);
 }
@@ -521,10 +499,7 @@ SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_setstat(self->sftp, path, &attr);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret == -1) {
-		PyErr_SetString(SSH2_Error, "Unable to stat.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
 	return PyInt_FromLong(1);
 }
@@ -564,21 +539,22 @@ static PyMethodDef SSH2_SFTP_methods[] =
  * Constructor for SFTP objects, never called by Python code directly
  *
  * Arguments: cert    - A "real" SFTP certificate object
+ *            session - The Python object reperesenting the session
  *            dealloc - Boolean value to specify whether the destructor should
  *                      free the "real" SFTP object
  * Returns:   The newly created SFTP object
  */
 SSH2_SFTPObj *
-SSH2_SFTP_New(LIBSSH2_SFTP *sftp, int dealloc)
+SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session, int dealloc)
 {
     SSH2_SFTPObj *self;
 
-    self = PyObject_New(SSH2_SFTPObj, &SSH2_SFTP_Type);
-
-    if (self == NULL)
-        return NULL;
+	if ((self = PyObject_New(SSH2_SFTPObj, &SSH2_SFTP_Type)) == NULL)
+		return NULL;
 
     self->sftp = sftp;
+	self->session = session;
+	Py_INCREF(session);
     self->dealloc = dealloc;
 	self->tstate = NULL;
 
@@ -598,6 +574,10 @@ SSH2_SFTP_dealloc(SSH2_SFTPObj *self)
     //~ if (self->dealloc) {
 		//~ free(self->sftp);
 	//~ }
+
+	Py_DECREF(self->session);
+	self->session = NULL;
+
     PyObject_Del(self);
 }
 

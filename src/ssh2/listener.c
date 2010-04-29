@@ -19,11 +19,9 @@ SSH2_Listener_Accept(SSH2_ListenerObj *self, PyObject *args)
 	channel = libssh2_channel_forward_accept(self->listener);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (channel == NULL) {
-		PyErr_SetString(SSH2_Error, "Accept error.");
-		return NULL;
-	}
-    return (PyObject *)SSH2_Channel_New(channel, 1);
+	HANDLE_SESSION_ERROR(channel == NULL, self->session)
+
+    return (PyObject *)SSH2_Channel_New(channel, self->session, 1);
 }
 
 static char SSH2_Listener_Cancel_doc[] = "";
@@ -59,22 +57,23 @@ static PyMethodDef SSH2_Listener_methods[] =
 /*
  * Constructor for Listener objects, never called by Python code directly
  *
- * Arguments: listener    - A listener object
- *            dealloc - Boolean value to specify whether the destructor should
- *                      free the listener object
+ * Arguments: listener - A listener object
+ *            session  - The Python object reperesenting the session
+ *            dealloc  - Boolean value to specify whether the destructor should
+ *                       free the listener object
  * Returns:   The newly created listener object
  */
 SSH2_ListenerObj *
-SSH2_Listener_New(LIBSSH2_LISTENER *listener, int dealloc)
+SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session, int dealloc)
 {
     SSH2_ListenerObj *self;
 
-    self = PyObject_New(SSH2_ListenerObj, &SSH2_Listener_Type);
-
-    if (self == NULL)
-        return NULL;
+	if ((self = PyObject_New(SSH2_ListenerObj, &SSH2_Listener_Type)) == NULL)
+		return NULL;
 
     self->listener = listener;
+	self->session = session;
+	Py_INCREF(session);
     self->dealloc = dealloc;
 	self->tstate = NULL;
 
@@ -90,9 +89,10 @@ SSH2_Listener_New(LIBSSH2_LISTENER *listener, int dealloc)
 static void
 SSH2_Listener_dealloc(SSH2_ListenerObj *self)
 {
-	if (self) {
-		PyObject_Del(self);
-	}
+	Py_DECREF(self->session);
+	self->session = NULL;
+
+	PyObject_Del(self);
 }
 
 /*

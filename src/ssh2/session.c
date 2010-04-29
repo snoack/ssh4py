@@ -45,12 +45,8 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 	ret=libssh2_session_startup(self->session, fd);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "SSH startup: %s", _err);
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self)
+
 	self->opened = 1;
 	return PyInt_FromLong(1);
 }
@@ -70,9 +66,8 @@ SSH2_Session_close(SSH2_SessionObj *self, PyObject *args)
 	ret = libssh2_session_disconnect(self->session, reason);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if(ret) {
-		PyErr_SetString(SSH2_Error, "SSH disconnect error");
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self)
+
 	self->opened = 0;
 	return PyInt_FromLong(1);
 }
@@ -139,10 +134,8 @@ SSH2_Session_setPassword(SSH2_SessionObj *self, PyObject *args)
 	ret = libssh2_userauth_password(self->session, login, pwd);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret==-1) {
-		PyErr_SetString(SSH2_Error, "Authentication by password failed.");
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self)
+
 	return PyInt_FromLong(1);
 }
 
@@ -164,12 +157,8 @@ SSH2_Session_setPublicKey(SSH2_SessionObj *self, PyObject *args)
 	ret = libssh2_userauth_publickey_fromfile(self->session, login, publickey, privatekey, passphrase);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (ret) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "Authentication by public key failed: %s", _err);
-		return NULL;
-	}
+	HANDLE_SESSION_ERROR(ret < 0, self)
+
 	return PyInt_FromLong(1);
 }
 
@@ -296,14 +285,9 @@ SSH2_Session_Channel(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_channel_open_session(self->session);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (channel == NULL) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "SSH channel error: %s", _err);
-		return NULL;
-    }
+	HANDLE_SESSION_ERROR(channel == NULL, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, dealloc);
+    return (PyObject *)SSH2_Channel_New(channel, self, dealloc);
 }
 
 static char SSH2_Session_SCPGet_doc[] = "";
@@ -322,13 +306,9 @@ SSH2_Session_SCPGet(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_scp_recv(self->session, path, NULL); // &sb
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (channel == NULL) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "SCP error: %s", _err);
-		return NULL;
-	}
-    return (PyObject *)SSH2_Channel_New(channel, 1);
+	HANDLE_SESSION_ERROR(channel == NULL, self)
+
+    return (PyObject *)SSH2_Channel_New(channel, self, 1);
 }
 
 static char SSH2_Session_SCPPut_doc[] = "";
@@ -348,13 +328,9 @@ SSH2_Session_SCPPut(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_scp_send(self->session, path, mode, filesize);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (channel == NULL) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "SCP error: %s", _err);
-		return NULL;
-	}
-    return (PyObject *)SSH2_Channel_New(channel, 1);
+	HANDLE_SESSION_ERROR(channel == NULL, self)
+
+    return (PyObject *)SSH2_Channel_New(channel, self, 1);
 }
 
 static char SSH2_Session_SFTP_doc[] = "";
@@ -376,7 +352,7 @@ SSH2_Session_SFTP(SSH2_SessionObj *self, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return (PyObject *)SSH2_SFTP_New(sftp, dealloc);
+    return (PyObject *)SSH2_SFTP_New(sftp, self, dealloc);
 }
 
 
@@ -399,13 +375,9 @@ SSH2_Session_DirectTcpIP(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_channel_direct_tcpip_ex(self->session, host, port, shost, sport);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (channel == NULL) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "DirectTcpIP error: %s", _err);
-		return NULL;
-	}
-    return (PyObject *)SSH2_Channel_New(channel, 1);
+	HANDLE_SESSION_ERROR(channel == NULL, self)
+
+    return (PyObject *)SSH2_Channel_New(channel, self, 1);
 }
 
 static char SSH2_Session_ForwardListen_doc[] = "";
@@ -427,13 +399,9 @@ SSH2_Session_ForwardListen(SSH2_SessionObj *self, PyObject *args)
 	listener = libssh2_channel_forward_listen_ex(self->session, host, port, bound_port, queue_maxsize);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	if (listener == NULL) {
-		char *_err = "";
-		libssh2_session_last_error(self->session, &_err, NULL, 0);
-		PyErr_Format(SSH2_Error, "ForwardListen error: %s", _err);
-		return NULL;
-	}
-    return (PyObject *)SSH2_Listener_New(listener, 0);
+	HANDLE_SESSION_ERROR(listener == NULL, self)
+
+    return (PyObject *)SSH2_Listener_New(listener, self, 0);
 }
 
 /*

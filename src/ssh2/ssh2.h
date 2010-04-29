@@ -31,6 +31,13 @@ extern PyObject *SSH2_Error;
 #  define MY_END_ALLOW_THREADS(st)      { st = NULL; }
 #endif
 
+#define HANDLE_SESSION_ERROR(cond, session_obj) \
+if (cond) {\
+	char *_err = "";\
+	libssh2_session_last_error(session_obj->session, &_err, NULL, 0);\
+	PyErr_SetString(SSH2_Error, _err);\
+	return NULL;\
+}
 
 #ifdef exception_from_error_queue
 #  undef exception_from_error_queue
@@ -41,27 +48,27 @@ extern PyObject *SSH2_Error;
     Py_DECREF(errlist); \
 } while (0)
 
-#define SSH2_Session_New_NUM             0
-#define SSH2_Session_New_RETURN          SSH2_SessionObj *
-#define SSH2_Session_New_PROTO           (LIBSSH2_SESSION *, int)
+#define SSH2_Session_New_NUM         0
+#define SSH2_Session_New_RETURN      SSH2_SessionObj *
+#define SSH2_Session_New_PROTO       (LIBSSH2_SESSION *, int)
 
-#define SSH2_Channel_New_NUM             1
-#define SSH2_Channel_New_RETURN          SSH2_ChannelObj *
-#define SSH2_Channel_New_PROTO           (LIBSSH2_CHANNEL *, int)
+#define SSH2_Channel_New_NUM         1
+#define SSH2_Channel_New_RETURN      SSH2_ChannelObj *
+#define SSH2_Channel_New_PROTO       (LIBSSH2_CHANNEL *, SSH2_SessionObj *, int)
 
-#define SSH2_SFTP_New_NUM             2
-#define SSH2_SFTP_New_RETURN          SSH2_SFTPObj *
-#define SSH2_SFTP_New_PROTO           (LIBSSH2_SFTP *, int)
+#define SSH2_SFTP_New_NUM            2
+#define SSH2_SFTP_New_RETURN         SSH2_SFTPObj *
+#define SSH2_SFTP_New_PROTO          (LIBSSH2_SFTP *, SSH2_SessionObj *, int)
 
-#define SSH2_SFTP_handle_New_NUM             3
-#define SSH2_SFTP_handle_New_RETURN          SSH2_SFTP_handleObj *
-#define SSH2_SFTP_handle_New_PROTO           (LIBSSH2_SFTP_HANDLE *, int)
+#define SSH2_SFTP_handle_New_NUM     3
+#define SSH2_SFTP_handle_New_RETURN  SSH2_SFTP_handleObj *
+#define SSH2_SFTP_handle_New_PROTO   (LIBSSH2_SFTP_HANDLE *, int)
 
-#define SSH2_Listener_New_NUM             4
-#define SSH2_Listener_New_RETURN          SSH2_ListenerObj *
-#define SSH2_Listener_New_PROTO           (LIBSSH2_LISTENER *, int)
+#define SSH2_Listener_New_NUM        4
+#define SSH2_Listener_New_RETURN     SSH2_ListenerObj *
+#define SSH2_Listener_New_PROTO      (LIBSSH2_LISTENER *, SSH2_SessionObj *, int)
 
-#define SSH2_API_pointers             5
+#define SSH2_API_pointers            5
 
 #ifdef SSH2_MODULE
 
