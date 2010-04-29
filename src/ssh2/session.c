@@ -80,7 +80,10 @@ static char SSH2_Session_isAuthenticated_doc[] = "";
 static PyObject *
 SSH2_Session_isAuthenticated(SSH2_SessionObj *self, PyObject *args)
 {
-	return PyInt_FromLong(libssh2_userauth_authenticated(self->session));
+	if (!PyArg_ParseTuple(args, ":isAuthenticated"))
+		return NULL;
+
+	return PyBool_FromLong(libssh2_userauth_authenticated(self->session));
 }
 
 static char SSH2_Session_getAuthenticationMethods_doc[] = "";
@@ -247,14 +250,10 @@ static char SSH2_Session_getBlocking_doc[] = "";
 static PyObject *
 SSH2_Session_getBlocking(SSH2_SessionObj *self, PyObject *args)
 {
-	int blocking;
-
 	if (!PyArg_ParseTuple(args, ":getBlocking"))
         return NULL;
 
-	blocking = libssh2_session_get_blocking(self->session);
-
-	return PyInt_FromLong(blocking);
+	return PyBool_FromLong(libssh2_session_get_blocking(self->session));
 }
 
 static char SSH2_Session_setBlocking_doc[] = "";

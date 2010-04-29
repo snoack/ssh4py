@@ -228,7 +228,7 @@ static char SSH2_Channel_eof_doc[] = "";
 static PyObject *
 SSH2_Channel_eof(SSH2_ChannelObj *self, PyObject *args)
 {
-	return PyInt_FromLong(libssh2_channel_eof(self->channel));
+	return PyBool_FromLong(libssh2_channel_eof(self->channel));
 }
 
 static char SSH2_Channel_sendEof_doc[] = "";
