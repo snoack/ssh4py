@@ -68,7 +68,7 @@ SSH2_SFTP_close(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_openDir_doc[] = "";
@@ -207,7 +207,7 @@ SSH2_SFTP_shutdown(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_read_doc[] = "";
@@ -295,7 +295,7 @@ SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 	libssh2_sftp_seek(handle->sftphandle, offset);
 	MY_END_ALLOW_THREADS(self->tstate);
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_SFTP_unlink_doc[] = "";
@@ -424,7 +424,7 @@ SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 
@@ -501,7 +501,7 @@ SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 /*

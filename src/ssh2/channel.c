@@ -22,7 +22,7 @@ SSH2_Channel_close(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_pty_doc[] = "";
@@ -49,7 +49,7 @@ SSH2_Channel_pty(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_pty_size_doc[] = "";
@@ -70,7 +70,7 @@ SSH2_Channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_shell_doc[] = "";
@@ -86,7 +86,7 @@ SSH2_Channel_shell(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_execute_doc[] = "";
@@ -106,7 +106,7 @@ SSH2_Channel_execute(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 
@@ -128,7 +128,7 @@ SSH2_Channel_setEnv(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_setBlocking_doc[] = "";
@@ -220,7 +220,7 @@ SSH2_Channel_flush(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(ret);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_eof_doc[] = "";
@@ -236,7 +236,10 @@ static char SSH2_Channel_sendEof_doc[] = "";
 static PyObject *
 SSH2_Channel_sendEof(SSH2_ChannelObj *self, PyObject *args)
 {
-	int ret=0;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, ":sendEof"))
+		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_send_eof(self->channel);
@@ -244,7 +247,7 @@ SSH2_Channel_sendEof(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(ret);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Channel_windowAdjust_doc[] = "";

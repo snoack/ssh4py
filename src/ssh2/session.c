@@ -20,7 +20,8 @@ SSH2_Session_setBanner(SSH2_SessionObj *self, PyObject *args)
 		return NULL;
 
 	libssh2_banner_set(self->session, banner);
-	return PyInt_FromLong(1);
+
+	Py_RETURN_NONE;
 }
 
 
@@ -48,7 +49,8 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
 	self->opened = 1;
-	return PyInt_FromLong(1);
+
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Session_close_doc[] = "";
@@ -69,7 +71,8 @@ SSH2_Session_close(SSH2_SessionObj *self, PyObject *args)
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
 	self->opened = 0;
-	return PyInt_FromLong(1);
+
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Session_isAuthenticated_doc[] = "";
@@ -136,7 +139,7 @@ SSH2_Session_setPassword(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Session_setPublicKey_doc[] = "";
@@ -159,7 +162,7 @@ SSH2_Session_setPublicKey(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
-	return PyInt_FromLong(1);
+	Py_RETURN_NONE;
 }
 
 static char SSH2_Session_getMethods_doc[] = "";
