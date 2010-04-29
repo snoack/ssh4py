@@ -311,44 +311,6 @@ SSH2_Channel_windowWrite(SSH2_ChannelObj *self, PyObject *args)
 	return _ret;
 }
 
- /* SSH2_Channel_pollRead
- * Returns 0 if no data is waiting on channel,
- * non-0 if data is available */
-static char SSH2_Channel_pollRead_doc[] = "";
-
-static PyObject *
-SSH2_Channel_pollRead(SSH2_ChannelObj *self, PyObject *args)
-{
-	int ret=0;
-	int ext=0;
-
-	if (!PyArg_ParseTuple(args, "|i:pollRead", &ext))
-		return NULL;
-
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
-	ret = libssh2_poll_channel_read(self->channel, ext);
-	MY_END_ALLOW_THREADS(self->tstate);
-
-	return PyInt_FromLong(ret);
-}
-
-static char SSH2_Channel_pollWrite_doc[] = "";
-
-static PyObject *
-SSH2_Channel_pollWrite(SSH2_ChannelObj *self, PyObject *args)
-{
-	int ret=0;
-
-	if (!PyArg_ParseTuple(args, ":pollWrite"))
-		return NULL;
-
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
-	ret = libssh2_poll_channel_write(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
-
-	return PyInt_FromLong(ret);
-}
-
 static char SSH2_Channel_getExitStatus_doc[] = "";
 
 static PyObject *
@@ -427,7 +389,6 @@ static PyMethodDef SSH2_Channel_methods[] =
 	ADD_METHOD(windowAdjust),
 	ADD_METHOD(windowRead),
 	ADD_METHOD(windowWrite),
-	ADD_METHOD(pollRead),
 	ADD_METHOD(getExitStatus),
 	ADD_METHOD(waitClosed),
 	ADD_METHOD(waitEof),
