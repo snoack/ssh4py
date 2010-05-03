@@ -103,7 +103,7 @@ static PyMethodDef SSH2_methods[] = {
  * Returns:   None
  */
 void
-initSSH2(void)
+initlibssh2(void)
 {
     static void *SSH2_API[SSH2_API_pointers];
     PyObject *c_api_object;
@@ -112,7 +112,7 @@ initSSH2(void)
     //~ ERR_load_SSH2_strings();
     //~ OpenSSL_add_all_algorithms();
 
-    if ((module = Py_InitModule3("SSH2", SSH2_methods, SSH2_doc)) == NULL)
+    if ((module = Py_InitModule3("libssh2", SSH2_methods, SSH2_doc)) == NULL)
         return;
 
     /* Initialize the C API pointer array */
@@ -124,7 +124,7 @@ initSSH2(void)
     if (c_api_object != NULL)
         PyModule_AddObject(module, "_C_API", c_api_object);
 
-    SSH2_Error = PyErr_NewException("OpenSSL.SSH2.Error", NULL, NULL);
+    SSH2_Error = PyErr_NewException("libssh2.Error", NULL, NULL);
     if (SSH2_Error == NULL)
         goto error;
     if (PyModule_AddObject(module, "Error", SSH2_Error) != 0)
