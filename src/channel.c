@@ -9,10 +9,8 @@
 #include "ssh2.h"
 
 
-static char SSH2_Channel_close_doc[] = "";
-
 static PyObject *
-SSH2_Channel_close(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_close(SSH2_ChannelObj *self)
 {
 	int ret;
 
@@ -24,8 +22,6 @@ SSH2_Channel_close(SSH2_ChannelObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_Channel_pty_doc[] = "";
 
 static PyObject *
 SSH2_Channel_pty(SSH2_ChannelObj *self, PyObject *args)
@@ -52,7 +48,6 @@ SSH2_Channel_pty(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_pty_size_doc[] = "";
 static PyObject *
 SSH2_Channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 {
@@ -73,10 +68,8 @@ SSH2_Channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_shell_doc[] = "";
-
 static PyObject *
-SSH2_Channel_shell(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_shell(SSH2_ChannelObj *self)
 {
 	int ret;
 
@@ -88,8 +81,6 @@ SSH2_Channel_shell(SSH2_ChannelObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_Channel_execute_doc[] = "";
 
 static PyObject *
 SSH2_Channel_execute(SSH2_ChannelObj *self, PyObject *args)
@@ -110,16 +101,14 @@ SSH2_Channel_execute(SSH2_ChannelObj *self, PyObject *args)
 }
 
 
-static char SSH2_Channel_setEnv_doc[] = "";
-
 static PyObject *
-SSH2_Channel_setEnv(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_set_env(SSH2_ChannelObj *self, PyObject *args)
 {
 	char *key;
 	char *val;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "ss:setEnv", &key, &val))
+	if (!PyArg_ParseTuple(args, "ss:set_env", &key, &val))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
@@ -131,14 +120,12 @@ SSH2_Channel_setEnv(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_setBlocking_doc[] = "";
-
 static PyObject *
-SSH2_Channel_setBlocking(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_set_blocking(SSH2_ChannelObj *self, PyObject *args)
 {
 	int b=1;
 
-	if (!PyArg_ParseTuple(args, "i:setBlocking", &b))
+	if (!PyArg_ParseTuple(args, "i:set_blocking", &b))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
@@ -147,8 +134,6 @@ SSH2_Channel_setBlocking(SSH2_ChannelObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_Channel_read_doc[] = "";
 
 static PyObject *
 SSH2_Channel_read(SSH2_ChannelObj *self, PyObject *args)
@@ -186,8 +171,6 @@ SSH2_Channel_read(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_write_doc[] = "";
-
 static PyObject *
 SSH2_Channel_write(SSH2_ChannelObj *self, PyObject *args)
 {
@@ -207,10 +190,8 @@ SSH2_Channel_write(SSH2_ChannelObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
-static char SSH2_Channel_flush_doc[] = "";
-
 static PyObject *
-SSH2_Channel_flush(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_flush(SSH2_ChannelObj *self)
 {
 	int ret=0;
 
@@ -223,23 +204,16 @@ SSH2_Channel_flush(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_eof_doc[] = "";
-
 static PyObject *
-SSH2_Channel_eof(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_eof(SSH2_ChannelObj *self)
 {
 	return PyBool_FromLong(libssh2_channel_eof(self->channel));
 }
 
-static char SSH2_Channel_sendEof_doc[] = "";
-
 static PyObject *
-SSH2_Channel_sendEof(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_send_eof(SSH2_ChannelObj *self)
 {
 	int ret;
-
-	if (!PyArg_ParseTuple(args, ":sendEof"))
-		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_send_eof(self->channel);
@@ -250,16 +224,14 @@ SSH2_Channel_sendEof(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_windowAdjust_doc[] = "";
-
 static PyObject *
-SSH2_Channel_windowAdjust(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_window_adjust(SSH2_ChannelObj *self, PyObject *args)
 {
 	unsigned long ret=0;
 	unsigned long adjustment;
 	unsigned char force;
 
-	if (!PyArg_ParseTuple(args, "|iz:windowAdjust", &adjustment, &force))
+	if (!PyArg_ParseTuple(args, "|iz:window_adjust", &adjustment, &force))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
@@ -269,10 +241,8 @@ SSH2_Channel_windowAdjust(SSH2_ChannelObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
-static char SSH2_Channel_windowRead_doc[] = "";
-
 static PyObject *
-SSH2_Channel_windowRead(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_window_read(SSH2_ChannelObj *self)
 {
 	unsigned long ret=0;
 	unsigned long read_avail;
@@ -291,10 +261,8 @@ SSH2_Channel_windowRead(SSH2_ChannelObj *self, PyObject *args)
 	return _ret;
 }
 
-static char SSH2_Channel_windowWrite_doc[] = "";
-
 static PyObject *
-SSH2_Channel_windowWrite(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_window_write(SSH2_ChannelObj *self)
 {
 	unsigned long ret=0;
 	unsigned long window_size_initial;
@@ -311,15 +279,10 @@ SSH2_Channel_windowWrite(SSH2_ChannelObj *self, PyObject *args)
 	return _ret;
 }
 
-static char SSH2_Channel_getExitStatus_doc[] = "";
-
 static PyObject *
-SSH2_Channel_getExitStatus(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_get_exit_status(SSH2_ChannelObj *self)
 {
 	int ret;
-
-	if (!PyArg_ParseTuple(args, ":getExitStatus"))
-		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_get_exit_status(self->channel);
@@ -328,15 +291,10 @@ SSH2_Channel_getExitStatus(SSH2_ChannelObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
-static char SSH2_Channel_waitClosed_doc[] = "";
-
 static PyObject *
-SSH2_Channel_waitClosed(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_wait_closed(SSH2_ChannelObj *self)
 {
 	int ret;
-
-	if (!PyArg_ParseTuple(args, ":waitClosed"))
-		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_wait_closed(self->channel);
@@ -347,15 +305,10 @@ SSH2_Channel_waitClosed(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_Channel_waitEof_doc[] = "";
-
 static PyObject *
-SSH2_Channel_waitEof(SSH2_ChannelObj *self, PyObject *args)
+SSH2_Channel_wait_eof(SSH2_ChannelObj *self)
 {
 	int ret;
-
-	if (!PyArg_ParseTuple(args, ":waitEof"))
-		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
 	ret = libssh2_channel_wait_eof(self->channel);
@@ -366,35 +319,28 @@ SSH2_Channel_waitEof(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-/*
- * ADD_METHOD(name) expands to a correct PyMethodDef declaration
- *   {  'name', (PyCFunction)SSH2_Channel_name, METH_VARARGS }
- * for convenience
- */
-#define ADD_METHOD(name) { #name, (PyCFunction)SSH2_Channel_##name, METH_VARARGS, SSH2_Channel_##name##_doc }
 static PyMethodDef SSH2_Channel_methods[] =
 {
-	ADD_METHOD(close),
-	ADD_METHOD(pty),
-	ADD_METHOD(pty_size),
-	ADD_METHOD(shell),
-	ADD_METHOD(execute),
-	ADD_METHOD(setEnv),
-	ADD_METHOD(setBlocking),
-	ADD_METHOD(read),
-	ADD_METHOD(write),
-	ADD_METHOD(flush),
-	ADD_METHOD(eof),
-	ADD_METHOD(sendEof),
-	ADD_METHOD(windowAdjust),
-	ADD_METHOD(windowRead),
-	ADD_METHOD(windowWrite),
-	ADD_METHOD(getExitStatus),
-	ADD_METHOD(waitClosed),
-	ADD_METHOD(waitEof),
-    { NULL, NULL }
+	{"close",           (PyCFunction)SSH2_Channel_close,           METH_NOARGS},
+	{"pty",             (PyCFunction)SSH2_Channel_pty,             METH_VARARGS},
+	{"pty_size",        (PyCFunction)SSH2_Channel_pty_size,        METH_VARARGS},
+	{"shell",           (PyCFunction)SSH2_Channel_shell,           METH_NOARGS},
+	{"execute",         (PyCFunction)SSH2_Channel_execute,         METH_VARARGS},
+	{"set_env",         (PyCFunction)SSH2_Channel_set_env,         METH_VARARGS},
+	{"set_blocking",    (PyCFunction)SSH2_Channel_set_blocking,    METH_VARARGS},
+	{"read",            (PyCFunction)SSH2_Channel_read,            METH_VARARGS},
+	{"write",           (PyCFunction)SSH2_Channel_write,           METH_VARARGS},
+	{"flush",           (PyCFunction)SSH2_Channel_flush,           METH_NOARGS},
+	{"eof",             (PyCFunction)SSH2_Channel_eof,             METH_NOARGS},
+	{"send_eof",        (PyCFunction)SSH2_Channel_send_eof,        METH_NOARGS},
+	{"window_adjust",   (PyCFunction)SSH2_Channel_window_adjust,   METH_VARARGS},
+	{"window_read",     (PyCFunction)SSH2_Channel_window_read,     METH_NOARGS},
+	{"window_write",    (PyCFunction)SSH2_Channel_window_write,    METH_NOARGS},
+	{"get_exit_status", (PyCFunction)SSH2_Channel_get_exit_status, METH_NOARGS},
+	{"wait_closed",     (PyCFunction)SSH2_Channel_wait_closed,     METH_NOARGS},
+	{"wait_eof",        (PyCFunction)SSH2_Channel_wait_eof,        METH_NOARGS},
+	{NULL, NULL}
 };
-#undef ADD_METHOD
 
 
 /*

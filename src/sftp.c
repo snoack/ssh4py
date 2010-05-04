@@ -51,35 +51,13 @@ get_attrs(LIBSSH2_SFTP_ATTRIBUTES *attr)
 }
 
 
-static char SSH2_SFTP_close_doc[] = "";
-
 static PyObject *
-SSH2_SFTP_close(SSH2_SFTPObj *self, PyObject *args)
-{
-	SSH2_SFTP_handleObj *handle;
-	int ret;
-
-	if (!PyArg_ParseTuple(args, "O:close", &handle))
-		return NULL;
-
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
-	ret = libssh2_sftp_close_handle(handle->sftphandle);
-	MY_END_ALLOW_THREADS(self->tstate);
-
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
-
-	Py_RETURN_NONE;
-}
-
-static char SSH2_SFTP_openDir_doc[] = "";
-
-static PyObject *
-SSH2_SFTP_openDir(SSH2_SFTPObj *self, PyObject *args)
+SSH2_SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 {
 	LIBSSH2_SFTP_HANDLE *handle;
 	char *path;
 
-	if (!PyArg_ParseTuple(args, "s:openDir", &path))
+	if (!PyArg_ParseTuple(args, "s:open_dir", &path))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
@@ -88,13 +66,11 @@ SSH2_SFTP_openDir(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
-	return (PyObject *)SSH2_SFTP_handle_New(handle, 1);
+	return (PyObject *)SSH2_SFTP_handle_New(handle, session, 1);
 }
 
-static char SSH2_SFTP_readDir_doc[] = "";
-
 static PyObject *
-SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
+SSH2_SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
@@ -103,7 +79,7 @@ SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
 	PyObject *buf;
 	PyObject *list=NULL;
 
-	if (!PyArg_ParseTuple(args, "O:readDir", &handle))
+	if (!PyArg_ParseTuple(args, "O:read_dir", &handle))
 		return NULL;
 
 	buf = PyString_FromStringAndSize(NULL, lenmax);
@@ -127,10 +103,8 @@ SSH2_SFTP_readDir(SSH2_SFTPObj *self, PyObject *args)
 	return list;
 }
 
-static char SSH2_SFTP_listDir_doc[] = "";
-
 static PyObject *
-SSH2_SFTP_listDir(SSH2_SFTPObj *self, PyObject *args)
+SSH2_SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
@@ -140,7 +114,7 @@ SSH2_SFTP_listDir(SSH2_SFTPObj *self, PyObject *args)
 	PyObject *all=NULL;
 	PyObject *list=NULL;
 
-	if (!PyArg_ParseTuple(args, "O:listDir", &handle))
+	if (!PyArg_ParseTuple(args, "O:list_dir", &handle))
 		return NULL;
 
 	all = PyList_New(0);
@@ -172,8 +146,6 @@ SSH2_SFTP_listDir(SSH2_SFTPObj *self, PyObject *args)
 	return all;
 }
 
-static char SSH2_SFTP_open_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -191,13 +163,11 @@ SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
-	return (PyObject *)SSH2_SFTP_handle_New(handle, 1);
+	return (PyObject *)SSH2_SFTP_handle_New(handle, self->session, 1);
 }
 
-static char SSH2_SFTP_shutdown_doc[] = "";
-
 static PyObject *
-SSH2_SFTP_shutdown(SSH2_SFTPObj *self, PyObject *args)
+SSH2_SFTP_shutdown(SSH2_SFTPObj *self)
 {
 	int ret;
 	// libssh2_sftp_shutdown == libssh2_channel_free(sftp->channel)
@@ -209,8 +179,6 @@ SSH2_SFTP_shutdown(SSH2_SFTPObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_SFTP_read_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
@@ -241,8 +209,6 @@ SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_SFTP_write_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -262,8 +228,6 @@ SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
-static char SSH2_SFTP_tell_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -280,8 +244,6 @@ SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
-static char SSH2_SFTP_seek_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -297,8 +259,6 @@ SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_SFTP_unlink_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
@@ -317,8 +277,6 @@ SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_SFTP_rename_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
@@ -339,8 +297,6 @@ SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_SFTP_mkdir_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -360,8 +316,6 @@ SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_SFTP_rmdir_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -379,8 +333,6 @@ SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
-
-static char SSH2_SFTP_realpath_doc[] = "";
 
 static PyObject *
 SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
@@ -413,8 +365,6 @@ SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static char SSH2_SFTP_symlink_doc[] = "";
-
 static PyObject *
 SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 {
@@ -437,10 +387,8 @@ SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 
 
 
-static char SSH2_SFTP_getStat_doc[] = "";
-
 static PyObject *
-SSH2_SFTP_getStat(SSH2_SFTPObj *self, PyObject *args)
+SSH2_SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 {
 	unsigned char *path;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
@@ -448,7 +396,7 @@ SSH2_SFTP_getStat(SSH2_SFTPObj *self, PyObject *args)
 	int lpath = 0;
 	int type = LIBSSH2_SFTP_STAT;
 
-	if (!PyArg_ParseTuple(args, "s#|i:getStat", &path, &lpath, &type))
+	if (!PyArg_ParseTuple(args, "s#|i:get_stat", &path, &lpath, &type))
 		return NULL;
 
 	MY_BEGIN_ALLOW_THREADS(self->tstate);
@@ -460,10 +408,8 @@ SSH2_SFTP_getStat(SSH2_SFTPObj *self, PyObject *args)
 	return get_attrs(&attr);
 }
 
-static char SSH2_SFTP_setStat_doc[] = "";
-
 static PyObject *
-SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
+SSH2_SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
@@ -472,7 +418,7 @@ SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
 
 	//~ printf("%s\n", PyString_AsString(PyObject_Str(args)));
 
-	if (!PyArg_ParseTuple(args, "sO:setStat", &path, &attrs))
+	if (!PyArg_ParseTuple(args, "sO:set_stat", &path, &attrs))
 		return NULL;
 
 	attr.flags = 0;
@@ -512,35 +458,27 @@ SSH2_SFTP_setStat(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-/*
- * ADD_METHOD(name) expands to a correct PyMethodDef declaration
- *   {  'name', (PyCFunction)SSH2_SFTP_name, METH_VARARGS }
- * for convenience
- */
-#define ADD_METHOD(name) { #name, (PyCFunction)SSH2_SFTP_##name, METH_VARARGS, SSH2_SFTP_##name##_doc }
 static PyMethodDef SSH2_SFTP_methods[] =
 {
-	ADD_METHOD(openDir),
-	ADD_METHOD(readDir),
-	ADD_METHOD(listDir),
-	ADD_METHOD(open),
-	ADD_METHOD(shutdown),
-	ADD_METHOD(read),
-	ADD_METHOD(write),
-	ADD_METHOD(tell),
-	ADD_METHOD(seek),
-	ADD_METHOD(close),
-	ADD_METHOD(unlink),
-	ADD_METHOD(rename),
-	ADD_METHOD(mkdir),
-	ADD_METHOD(rmdir),
-	ADD_METHOD(realpath),
-	ADD_METHOD(symlink),
-	ADD_METHOD(getStat),
-	ADD_METHOD(setStat),
-	{ NULL, NULL }
+	{"open_dir", (PyCFunction)SSH2_SFTP_open_dir, METH_VARARGS},
+	{"read_dir", (PyCFunction)SSH2_SFTP_read_dir, METH_VARARGS},
+	{"list_dir", (PyCFunction)SSH2_SFTP_list_dir, METH_VARARGS},
+	{"open",     (PyCFunction)SSH2_SFTP_open,     METH_VARARGS},
+	{"shutdown", (PyCFunction)SSH2_SFTP_shutdown, METH_NOARGS},
+	{"read",     (PyCFunction)SSH2_SFTP_read,     METH_VARARGS},
+	{"write",    (PyCFunction)SSH2_SFTP_write,    METH_VARARGS},
+	{"tell",     (PyCFunction)SSH2_SFTP_tell,     METH_VARARGS},
+	{"seek",     (PyCFunction)SSH2_SFTP_seek,     METH_VARARGS},
+	{"unlink",   (PyCFunction)SSH2_SFTP_unlink,   METH_VARARGS},
+	{"rename",   (PyCFunction)SSH2_SFTP_rename,   METH_VARARGS},
+	{"mkdir",    (PyCFunction)SSH2_SFTP_mkdir,    METH_VARARGS},
+	{"rmdir",    (PyCFunction)SSH2_SFTP_rmdir,    METH_VARARGS},
+	{"realpath", (PyCFunction)SSH2_SFTP_realpath, METH_VARARGS},
+	{"symlinkr", (PyCFunction)SSH2_SFTP_symlink,  METH_VARARGS},
+	{"get_stat", (PyCFunction)SSH2_SFTP_get_stat, METH_VARARGS},
+	{"set_stat", (PyCFunction)SSH2_SFTP_set_stat, METH_VARARGS},
+	{NULL, NULL}
 };
-#undef ADD_METHOD
 
 
 /*

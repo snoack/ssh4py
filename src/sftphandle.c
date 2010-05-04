@@ -8,39 +8,49 @@
 #define SSH2_MODULE
 #include "ssh2.h"
 
-/*
- * ADD_METHOD(name) expands to a correct PyMethodDef declaration
- *   {  'name', (PyCFunction)SSH2_SFTP_handle_name, METH_VARARGS }
- * for convenience
- */
-#define ADD_METHOD(name) { #name, (PyCFunction)SSH2_SFTP_handle_##name, METH_VARARGS, SSH2_SFTP_handle_##name##_doc }
+static PyObject *
+SSH2_SFTP_handle_close(SSH2_SFTP_handleObj *self)
+{
+	int ret;
+
+	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	ret = libssh2_sftp_close_handle(self->sftphandle);
+	MY_END_ALLOW_THREADS(self->tstate);
+
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef SSH2_SFTP_handle_methods[] =
 {
-    { NULL, NULL }
+	{"close", SSH2_SFTP_handle_close, METH_NOARGS},
+    {NULL, NULL}
 };
-#undef ADD_METHOD
 
 
 /*
  * Constructor for SFTP_handle objects, never called by Python code directly
  *
  * Arguments: cert    - A "real" SFTP_handle certificate object
+ *            session - The Python object reperesenting the session
  *            dealloc - Boolean value to specify whether the destructor should
  *                      free the "real" SFTP_handle object
  * Returns:   The newly created SFTP_handle object
  */
 SSH2_SFTP_handleObj *
-SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, int dealloc)
+SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, SSH2_SessionObj *session, int dealloc)
 {
-    SSH2_SFTP_handleObj *self;
+	SSH2_SFTP_handleObj *self;
 
-    self = PyObject_New(SSH2_SFTP_handleObj, &SSH2_SFTP_handle_Type);
-
-    if (self == NULL)
-        return NULL;
+	if ((self = PyObject_New(SSH2_SFTP_handleObj, &SSH2_SFTP_handle_Type)) == NULL)
+		return NULL;
 
     self->sftphandle = sftphandle;
+	self->session = session;
+	Py_INCREF(session);
     self->dealloc = dealloc;
+	self->tstate = NULL;
 
     return self;
 }
@@ -54,8 +64,8 @@ SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, int dealloc)
 static void
 SSH2_SFTP_handle_dealloc(SSH2_SFTP_handleObj *self)
 {
-    //~ if (self->dealloc)
-		//~ free(self->sftphandle);
+	Py_DECREF(self->session);
+	self->session = NULL;
 
     PyObject_Del(self);
 }

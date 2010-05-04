@@ -17,9 +17,11 @@ extern  PyTypeObject      SSH2_SFTP_handle_Type;
 #define SSH2_SFTP_handle_Check(v) ((v)->ob_type == &SSH2_SFTP_handle_Type)
 
 typedef struct {
-    PyObject_HEAD
+	PyObject_HEAD
 	LIBSSH2_SFTP_HANDLE *sftphandle;
-    int                  dealloc;
+	SSH2_SessionObj     *session;
+	PyThreadState       *tstate;
+	int                 dealloc;
 } SSH2_SFTP_handleObj;
 
 

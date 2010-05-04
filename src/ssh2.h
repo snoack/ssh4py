@@ -70,7 +70,7 @@ if (cond) { \
 
 #define SSH2_SFTP_handle_New_NUM     3
 #define SSH2_SFTP_handle_New_RETURN  SSH2_SFTP_handleObj *
-#define SSH2_SFTP_handle_New_PROTO   (LIBSSH2_SFTP_HANDLE *, int)
+#define SSH2_SFTP_handle_New_PROTO   (LIBSSH2_SFTP_HANDLE *, SSH2_SessionObj *, int)
 
 #define SSH2_Listener_New_NUM        4
 #define SSH2_Listener_New_RETURN     SSH2_ListenerObj *

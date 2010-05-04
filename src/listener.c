@@ -8,10 +8,8 @@
 #define SSH2_MODULE
 #include "ssh2.h"
 
-static char SSH2_Listener_Accept_doc[] = "";
-
 static PyObject *
-SSH2_Listener_Accept(SSH2_ListenerObj *self, PyObject *args)
+SSH2_Listener_accept(SSH2_ListenerObj *self)
 {
 	LIBSSH2_CHANNEL *channel;
 
@@ -24,10 +22,8 @@ SSH2_Listener_Accept(SSH2_ListenerObj *self, PyObject *args)
     return (PyObject *)SSH2_Channel_New(channel, self->session, 1);
 }
 
-static char SSH2_Listener_Cancel_doc[] = "";
-
 static PyObject *
-SSH2_Listener_Cancel(SSH2_ListenerObj *self, PyObject *args)
+SSH2_Listener_cancel(SSH2_ListenerObj *self)
 {
 	int ret;
 
@@ -41,19 +37,12 @@ SSH2_Listener_Cancel(SSH2_ListenerObj *self, PyObject *args)
 }
 
 
-/*
- * ADD_METHOD(name) expands to a correct PyMethodDef declaration
- *   {  'name', (PyCFunction)crypto_Listener_name, METH_VARARGS }
- * for convenience
- */
-#define ADD_METHOD(name) { #name, (PyCFunction)SSH2_Listener_##name, METH_VARARGS, SSH2_Listener_##name##_doc }
 static PyMethodDef SSH2_Listener_methods[] =
 {
-	ADD_METHOD(Accept),
-	ADD_METHOD(Cancel),
-    { NULL, NULL }
+	{"accept", (PyCFunction)SSH2_Listener_accept, METH_NOARGS},
+	{"cancel", (PyCFunction)SSH2_Listener_cancel, METH_NOARGS},
+	{NULL, NULL}
 };
-#undef ADD_METHOD
 
 
 /*
