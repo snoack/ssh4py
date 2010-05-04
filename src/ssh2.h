@@ -87,9 +87,9 @@ extern void **SSH2_API;
 #define SSH2_Listener_New (*(SSH2_Listener_New_RETURN (*)SSH2_Listener_New_PROTO) SSH2_API[SSH2_Listener_New_NUM])
 
 
-#define import_SSH2() \
+#define import_libssh2() \
 { \
-  PyObject *SSH2_module = PyImport_ImportModule("OpenSSL.SSH2"); \
+  PyObject *SSH2_module = PyImport_ImportModule("libssh2"); \
   if (SSH2_module != NULL) { \
     PyObject *SSH2_dict, *SSH2_api_object; \
     SSH2_dict = PyModule_GetDict(SSH2_module); \
