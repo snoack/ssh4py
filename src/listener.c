@@ -13,9 +13,9 @@ SSH2_Listener_accept(SSH2_ListenerObj *self)
 {
 	LIBSSH2_CHANNEL *channel;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_channel_forward_accept(self->listener);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(channel == NULL, self->session)
 
@@ -27,9 +27,9 @@ SSH2_Listener_cancel(SSH2_ListenerObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_forward_cancel(self->listener);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -65,8 +65,7 @@ SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session, int deal
     self->listener = listener;
 	self->session = session;
 	Py_INCREF(session);
-    self->dealloc = dealloc;
-	self->tstate = NULL;
+	self->dealloc = dealloc;
 
     return self;
 }

@@ -54,9 +54,9 @@ SSH2_Channel(PyObject *spam, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:Channel", &session, &dealloc))
         return NULL;
 
-    MY_BEGIN_ALLOW_THREADS(session->tstate);
+    Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_channel_open_session(session->session);
-	MY_END_ALLOW_THREADS(session->tstate);
+	Py_END_ALLOW_THREADS
 
     if (channel == NULL) {
         Py_RETURN_NONE;
@@ -76,9 +76,9 @@ SSH2_SFTP(PyObject *spam, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|i:SFTP", &session, &dealloc))
         return NULL;
 
-    MY_BEGIN_ALLOW_THREADS(session->tstate);
+    Py_BEGIN_ALLOW_THREADS
     sftp = libssh2_sftp_init(session->session);
-    MY_END_ALLOW_THREADS(session->tstate);
+    Py_END_ALLOW_THREADS
 
     if (sftp == NULL) {
         Py_RETURN_NONE;

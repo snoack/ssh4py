@@ -14,9 +14,9 @@ SSH2_Channel_close(SSH2_ChannelObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_close(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -39,9 +39,9 @@ SSH2_Channel_pty(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s#|s#iiii:pty", &term, &lt, &modes, &lm, &w, &h, &pw, &ph))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_request_pty_ex(self->channel, term, lt, modes, lm, w, h, pw, ph);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -59,9 +59,9 @@ SSH2_Channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ii:pty_size", &w, &h))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_request_pty_size(self->channel, w, h);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -73,9 +73,9 @@ SSH2_Channel_shell(SSH2_ChannelObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_shell(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -91,9 +91,9 @@ SSH2_Channel_execute(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s:execute", &cmd))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_exec(self->channel, cmd);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -111,9 +111,9 @@ SSH2_Channel_set_env(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ss:set_env", &key, &val))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_setenv(self->channel, key, val);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -128,9 +128,9 @@ SSH2_Channel_set_blocking(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i:set_blocking", &b))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	libssh2_channel_set_blocking(self->channel, b);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	Py_RETURN_NONE;
 }
@@ -151,13 +151,13 @@ SSH2_Channel_read(SSH2_ChannelObj *self, PyObject *args)
 
 	if (libssh2_channel_eof(self->channel)!=1) {
 
-		MY_BEGIN_ALLOW_THREADS(self->tstate);
+		Py_BEGIN_ALLOW_THREADS
 		if (err == 1) {
 			ret = libssh2_channel_read_stderr(self->channel, PyString_AsString(buf), bufsiz);
 		} else {
 			ret = libssh2_channel_read(self->channel, PyString_AsString(buf), bufsiz);
 		}
-		MY_END_ALLOW_THREADS(self->tstate);
+		Py_END_ALLOW_THREADS
 
 		if (ret > 0) {
 			if (ret != bufsiz && _PyString_Resize(&buf, ret) < 0) {
@@ -181,9 +181,9 @@ SSH2_Channel_write(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s#:write", &msg, &len))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_write(self->channel, msg, len);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -195,9 +195,9 @@ SSH2_Channel_flush(SSH2_ChannelObj *self)
 {
 	int ret=0;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_flush(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -215,9 +215,9 @@ SSH2_Channel_send_eof(SSH2_ChannelObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_send_eof(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -234,9 +234,9 @@ SSH2_Channel_window_adjust(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|iz:window_adjust", &adjustment, &force))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_receive_window_adjust(self->channel, adjustment, force);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	return PyInt_FromLong(ret);
 }
@@ -249,9 +249,9 @@ SSH2_Channel_window_read(SSH2_ChannelObj *self)
 	unsigned long window_size_initial;
 	PyObject *_ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_window_read_ex(self->channel, &read_avail, &window_size_initial);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	_ret = PyTuple_New(3);
 	PyTuple_SetItem(_ret, 0, PyInt_FromLong(ret));
@@ -268,9 +268,9 @@ SSH2_Channel_window_write(SSH2_ChannelObj *self)
 	unsigned long window_size_initial;
 	PyObject *_ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_window_write_ex(self->channel, &window_size_initial);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	_ret = PyTuple_New(2);
 	PyTuple_SetItem(_ret, 0, PyInt_FromLong(ret));
@@ -284,9 +284,9 @@ SSH2_Channel_get_exit_status(SSH2_ChannelObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_get_exit_status(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	return PyInt_FromLong(ret);
 }
@@ -296,9 +296,9 @@ SSH2_Channel_wait_closed(SSH2_ChannelObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_wait_closed(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -310,9 +310,9 @@ SSH2_Channel_wait_eof(SSH2_ChannelObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_wait_eof(self->channel);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -363,7 +363,6 @@ SSH2_Channel_New(LIBSSH2_CHANNEL *channel, SSH2_SessionObj *session, int dealloc
     self->channel = channel;
 	self->session = session;
 	Py_INCREF(session);
-	self->tstate = NULL;
     self->dealloc = dealloc;
 
     return self;

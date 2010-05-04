@@ -60,9 +60,9 @@ SSH2_SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s:open_dir", &path))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	handle = libssh2_sftp_opendir(self->sftp, path);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
@@ -85,9 +85,9 @@ SSH2_SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 	buf = PyString_FromStringAndSize(NULL, lenmax);
     if (buf == NULL) return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	if (len == 0)
 		Py_RETURN_NONE;
@@ -122,9 +122,9 @@ SSH2_SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
 		buf = PyString_FromStringAndSize(NULL, lenmax);
 		if (buf == NULL) return NULL;
 
-		MY_BEGIN_ALLOW_THREADS(self->tstate);
+		Py_BEGIN_ALLOW_THREADS
 		len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
-		MY_END_ALLOW_THREADS(self->tstate);
+		Py_END_ALLOW_THREADS
 
 		if (len == 0)
 			break;
@@ -157,9 +157,9 @@ SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|si:open", &path, &flags, &mode))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	handle = libssh2_sftp_open(self->sftp, path, get_flags(flags), mode);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
@@ -171,9 +171,9 @@ SSH2_SFTP_shutdown(SSH2_SFTPObj *self)
 {
 	int ret;
 	// libssh2_sftp_shutdown == libssh2_channel_free(sftp->channel)
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_shutdown(self->sftp);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -194,9 +194,9 @@ SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
     if (buf == NULL)
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_read(handle->sftphandle, PyString_AsString(buf), bufsiz);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	if (ret > 0) {
 		if (ret != bufsiz && _PyString_Resize(&buf, ret) < 0) {
@@ -219,9 +219,9 @@ SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Os#:write", &handle, &msg, &len))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_write(handle->sftphandle, msg, len);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -237,9 +237,9 @@ SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O:tell", &handle))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_tell(handle->sftphandle);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	return PyInt_FromLong(ret);
 }
@@ -253,9 +253,9 @@ SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Ok:seek", &handle, &offset))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	libssh2_sftp_seek(handle->sftphandle, offset);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	Py_RETURN_NONE;
 }
@@ -269,9 +269,9 @@ SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s:unlink", &path))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_unlink(self->sftp, path);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session);
 
@@ -288,9 +288,9 @@ SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ss:rename", &src, &dst))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_rename(self->sftp, src, dst);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session);
 
@@ -307,9 +307,9 @@ SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i:mkdir", &path, &mode))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_mkdir(self->sftp, path, mode);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session);
 
@@ -325,9 +325,9 @@ SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s:rmdir", &path))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_rmdir(self->sftp, path);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session);
 
@@ -350,9 +350,9 @@ SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
     if (target == NULL)
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_symlink_ex(self->sftp, path, lpath, PyString_AsString(target), len, type);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	if (ret > 0) {
 		if (ret != len && _PyString_Resize(&target, ret) < 0) {
@@ -376,9 +376,9 @@ SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 		return NULL;
 
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_symlink(self->sftp, path, target);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -399,9 +399,9 @@ SSH2_SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s#|i:get_stat", &path, &lpath, &type))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_stat_ex(self->sftp, path, lpath, type, &attr);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -449,9 +449,9 @@ SSH2_SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
 		}
 	}
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_setstat(self->sftp, path, &attr);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -502,7 +502,6 @@ SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session, int dealloc)
 	self->session = session;
 	Py_INCREF(session);
     self->dealloc = dealloc;
-	self->tstate = NULL;
 
     return self;
 }

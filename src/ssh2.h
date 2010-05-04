@@ -21,16 +21,6 @@
 
 extern PyObject *SSH2_Error;
 
-#ifdef WITH_THREAD
-#  define MY_BEGIN_ALLOW_THREADS(st)    \
-    { st = PyEval_SaveThread(); }
-#  define MY_END_ALLOW_THREADS(st)      \
-    { PyEval_RestoreThread(st); st = NULL; }
-#else
-#  define MY_BEGIN_ALLOW_THREADS(st)
-#  define MY_END_ALLOW_THREADS(st)      { st = NULL; }
-#endif
-
 #define HANDLE_SESSION_ERROR(cond, session_obj) \
 if (cond) { \
 	char*     _errmsg     = ""; \

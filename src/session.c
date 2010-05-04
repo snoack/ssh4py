@@ -38,9 +38,9 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 		return NULL;
 	}
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret=libssh2_session_startup(self->session, fd);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
@@ -60,9 +60,9 @@ SSH2_Session_close(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|s:close", &reason))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_session_disconnect(self->session, reason);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
@@ -103,9 +103,9 @@ SSH2_Session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|i:get_fingerprint", &hashtype))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	hash = libssh2_hostkey_hash(self->session, hashtype);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	return PyString_FromString(hash);
 }
@@ -120,9 +120,9 @@ SSH2_Session_set_password(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "ss:set_password", &login, &pwd))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_userauth_password(self->session, login, pwd);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
@@ -141,9 +141,9 @@ SSH2_Session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "sss|s:set_public_key", &login, &publickey, &privatekey, &passphrase))
 		return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_userauth_publickey_fromfile(self->session, login, publickey, privatekey, passphrase);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self)
 
@@ -257,9 +257,9 @@ SSH2_Session_channel(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|i:channel", &dealloc))
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_channel_open_session(self->session);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
@@ -276,9 +276,9 @@ SSH2_Session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s:scp_recv", &path))
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_scp_recv(self->session, path, NULL); // &sb
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
@@ -296,9 +296,9 @@ SSH2_Session_scp_send(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "sik:scp_send", &path, &mode, &filesize))
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_scp_send(self->session, path, mode, filesize);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
@@ -314,9 +314,9 @@ SSH2_Session_sftp(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|i:sftp", &dealloc))
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	sftp = libssh2_sftp_init(self->session);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	if (sftp == NULL) {
         Py_RETURN_NONE;
@@ -339,9 +339,9 @@ SSH2_Session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "si|si:direct_tcpip", &host, &port, &shost, &sport))
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_channel_direct_tcpip_ex(self->session, host, port, shost, sport);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
@@ -360,9 +360,9 @@ SSH2_Session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "siii:forward_listen", &host, &port, &bound_port, &queue_maxsize))
         return NULL;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	listener = libssh2_channel_forward_listen_ex(self->session, host, port, bound_port, queue_maxsize);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(listener == NULL, self)
 
@@ -416,7 +416,6 @@ SSH2_Session_New(LIBSSH2_SESSION *session, int dealloc)
     self->dealloc = dealloc;
     self->opened = 0;
 	self->socket=NULL;
-	self->tstate = NULL;
 	self->callback = Py_None;
     Py_INCREF(Py_None);
 

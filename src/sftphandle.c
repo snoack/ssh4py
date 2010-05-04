@@ -13,9 +13,9 @@ SSH2_SFTP_handle_close(SSH2_SFTP_handleObj *self)
 {
 	int ret;
 
-	MY_BEGIN_ALLOW_THREADS(self->tstate);
+	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_close_handle(self->sftphandle);
-	MY_END_ALLOW_THREADS(self->tstate);
+	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
@@ -50,7 +50,6 @@ SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, SSH2_SessionObj *session, 
 	self->session = session;
 	Py_INCREF(session);
     self->dealloc = dealloc;
-	self->tstate = NULL;
 
     return self;
 }

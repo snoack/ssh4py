@@ -20,7 +20,6 @@ typedef struct {
     PyObject_HEAD
 	LIBSSH2_SESSION *session;
 	PyObject          *socket, *callback;
-	PyThreadState       *tstate;
     int                  dealloc;
     int                  opened;
 } SSH2_SessionObj;
