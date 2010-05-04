@@ -18,7 +18,6 @@ static char SSH2_Session_doc[] = "\n\
 generate a session\n\
 \n\
 Arguments: spam - Always NULL\n\
-           i - dealloc\n\
 Returns:   A Session\n\
 ";
 
@@ -26,12 +25,7 @@ Returns:   A Session\n\
 static PyObject *
 SSH2_Session(PyObject *spam, PyObject *args)
 {
-    int dealloc = 1;
-
-    if (!PyArg_ParseTuple(args, "|i:Session", &dealloc))
-        return NULL;
-
-    return (PyObject *)SSH2_Session_New(libssh2_session_init(), dealloc);
+    return (PyObject *)SSH2_Session_New(libssh2_session_init());
 }
 
 
@@ -39,7 +33,6 @@ static char SSH2_Channel_doc[] = "\n\
 generate a session\n\
 \n\
 Arguments: spam - Always NULL\n\
-           i - dealloc\n\
 Returns:   A Session\n\
 ";
 
@@ -49,9 +42,8 @@ SSH2_Channel(PyObject *spam, PyObject *args)
 {
 	SSH2_SessionObj *session;
     LIBSSH2_CHANNEL *channel;
-    int dealloc = 1;
 
-    if (!PyArg_ParseTuple(args, "O|i:Channel", &session, &dealloc))
+    if (!PyArg_ParseTuple(args, "O:Channel", &session))
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -62,7 +54,7 @@ SSH2_Channel(PyObject *spam, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return (PyObject *)SSH2_Channel_New(channel, session, dealloc);
+    return (PyObject *)SSH2_Channel_New(channel, session);
 }
 
 static char SSH2_SFTP_doc[] = "";
@@ -71,9 +63,8 @@ SSH2_SFTP(PyObject *spam, PyObject *args)
 {
 	SSH2_SessionObj *session;
     LIBSSH2_SFTP *sftp;
-    int dealloc = 1;
 
-    if (!PyArg_ParseTuple(args, "O|i:SFTP", &session, &dealloc))
+    if (!PyArg_ParseTuple(args, "O:SFTP", &session))
         return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -84,16 +75,16 @@ SSH2_SFTP(PyObject *spam, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return (PyObject *)SSH2_SFTP_New(sftp, session, dealloc);
+    return (PyObject *)SSH2_SFTP_New(sftp, session);
 }
 
 /* Methods in the OpenSSL.ssh module (i.e. none) */
 static PyMethodDef SSH2_methods[] = {
     /* Module functions */
-	{ "Session",(PyCFunction)SSH2_Session,   METH_VARARGS, SSH2_Session_doc },
-	{ "Channel",(PyCFunction)SSH2_Channel,   METH_VARARGS, SSH2_Channel_doc },
-	{ "SFTP",(PyCFunction)SSH2_SFTP,   METH_VARARGS, SSH2_SFTP_doc },
-    { NULL, NULL }
+	{"Session", (PyCFunction)SSH2_Session, METH_NOARGS,  SSH2_Session_doc},
+	{"Channel", (PyCFunction)SSH2_Channel, METH_VARARGS, SSH2_Channel_doc},
+	{"SFTP",    (PyCFunction)SSH2_SFTP,    METH_VARARGS, SSH2_SFTP_doc},
+    {NULL, NULL}
 };
 
 /*

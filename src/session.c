@@ -249,13 +249,9 @@ SSH2_Session_set_blocking(SSH2_SessionObj *self, PyObject *args)
 
 
 static PyObject *
-SSH2_Session_channel(SSH2_SessionObj *self, PyObject *args)
+SSH2_Session_channel(SSH2_SessionObj *self)
 {
-	int dealloc = 1;
 	LIBSSH2_CHANNEL *channel;
-
-	if (!PyArg_ParseTuple(args, "|i:channel", &dealloc))
-        return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_channel_open_session(self->session);
@@ -263,7 +259,7 @@ SSH2_Session_channel(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self, dealloc);
+    return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -282,7 +278,7 @@ SSH2_Session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self, 1);
+    return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -302,17 +298,13 @@ SSH2_Session_scp_send(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self, 1);
+    return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
-SSH2_Session_sftp(SSH2_SessionObj *self, PyObject *args)
+SSH2_Session_sftp(SSH2_SessionObj *self)
 {
-	int dealloc = 1;
 	LIBSSH2_SFTP *sftp;
-
-	if (!PyArg_ParseTuple(args, "|i:sftp", &dealloc))
-        return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	sftp = libssh2_sftp_init(self->session);
@@ -322,7 +314,7 @@ SSH2_Session_sftp(SSH2_SessionObj *self, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    return (PyObject *)SSH2_SFTP_New(sftp, self, dealloc);
+    return (PyObject *)SSH2_SFTP_New(sftp, self);
 }
 
 
@@ -345,7 +337,7 @@ SSH2_Session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(channel == NULL, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self, 1);
+    return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -366,7 +358,7 @@ SSH2_Session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(listener == NULL, self)
 
-    return (PyObject *)SSH2_Listener_New(listener, self, 0);
+    return (PyObject *)SSH2_Listener_New(listener, self);
 }
 
 static PyMethodDef SSH2_Session_methods[] =
@@ -384,10 +376,10 @@ static PyMethodDef SSH2_Session_methods[] =
 	{"set_callback",               (PyCFunction)SSH2_Session_set_callback,               METH_VARARGS},
 	{"get_blocking",               (PyCFunction)SSH2_Session_get_blocking,               METH_NOARGS},
 	{"set_blocking",               (PyCFunction)SSH2_Session_set_blocking,               METH_VARARGS},
-	{"channel",                    (PyCFunction)SSH2_Session_channel,                    METH_VARARGS},
+	{"channel",                    (PyCFunction)SSH2_Session_channel,                    METH_NOARGS},
 	{"scp_recv",                   (PyCFunction)SSH2_Session_scp_recv,                   METH_VARARGS},
 	{"scp_send",                   (PyCFunction)SSH2_Session_scp_send,                   METH_VARARGS},
-	{"sftp",                       (PyCFunction)SSH2_Session_sftp,                       METH_VARARGS},
+	{"sftp",                       (PyCFunction)SSH2_Session_sftp,                       METH_NOARGS},
 	{"direct_tcpip",               (PyCFunction)SSH2_Session_direct_tcpip,               METH_VARARGS},
 	{"forward_listen",             (PyCFunction)SSH2_Session_forward_listen,             METH_VARARGS},
 	{NULL, NULL}
@@ -398,12 +390,10 @@ static PyMethodDef SSH2_Session_methods[] =
  * Constructor for Session objects, never called by Python code directly
  *
  * Arguments: cert    - A "real" Session certificate object
- *            dealloc - Boolean value to specify whether the destructor should
- *                      free the "real" Session object
  * Returns:   The newly created Session object
  */
 SSH2_SessionObj *
-SSH2_Session_New(LIBSSH2_SESSION *session, int dealloc)
+SSH2_Session_New(LIBSSH2_SESSION *session)
 {
     SSH2_SessionObj *self;
 
@@ -413,7 +403,6 @@ SSH2_Session_New(LIBSSH2_SESSION *session, int dealloc)
         return NULL;
 
     self->session = session;
-    self->dealloc = dealloc;
     self->opened = 0;
 	self->socket=NULL;
 	self->callback = Py_None;
@@ -433,24 +422,19 @@ SSH2_Session_New(LIBSSH2_SESSION *session, int dealloc)
 static void
 SSH2_Session_dealloc(SSH2_SessionObj *self)
 {
-    /* Sometimes we don't have to dealloc the "real" Session pointer ourselves */
-	if (self->opened) {
+	if (self->opened)
 		libssh2_session_disconnect(self->session, "end");
-	}
-    if (self->dealloc) {
-        libssh2_session_free(self->session);
-		self->session = NULL;
-	}
-	if (self->callback) {
-		Py_XDECREF(self->callback);
-		self->callback = NULL;
-	}
+
+	libssh2_session_free(self->session);
+	self->session = NULL;
+
+	Py_XDECREF(self->callback);
+	self->callback = NULL;
 
 	Py_XDECREF(self->socket);
-    self->socket = NULL;
-	if (self) {
-		PyObject_Del(self);
-	}
+	self->socket = NULL;
+
+	PyObject_Del(self);
 }
 
 /*

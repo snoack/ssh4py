@@ -21,7 +21,6 @@ typedef struct {
 	PyObject_HEAD
 	LIBSSH2_CHANNEL *channel;
 	SSH2_SessionObj *session;
-	int             dealloc;
 } SSH2_ChannelObj;
 
 

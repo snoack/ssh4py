@@ -20,7 +20,6 @@ typedef struct {
 	PyObject_HEAD
 	LIBSSH2_SFTP_HANDLE *sftphandle;
 	SSH2_SessionObj     *session;
-	int                 dealloc;
 } SSH2_SFTP_handleObj;
 
 

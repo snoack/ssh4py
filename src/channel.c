@@ -348,12 +348,10 @@ static PyMethodDef SSH2_Channel_methods[] =
  *
  * Arguments: cert    - A "real" Channel certificate object
  *            session - The Python object reperesenting the session
- *            dealloc - Boolean value to specify whether the destructor should
- *                      free the "real" Channel object
  * Returns:   The newly created Channel object
  */
 SSH2_ChannelObj *
-SSH2_Channel_New(LIBSSH2_CHANNEL *channel, SSH2_SessionObj *session, int dealloc)
+SSH2_Channel_New(LIBSSH2_CHANNEL *channel, SSH2_SessionObj *session)
 {
     SSH2_ChannelObj *self;
 
@@ -363,7 +361,6 @@ SSH2_Channel_New(LIBSSH2_CHANNEL *channel, SSH2_SessionObj *session, int dealloc
     self->channel = channel;
 	self->session = session;
 	Py_INCREF(session);
-    self->dealloc = dealloc;
 
     return self;
 }
@@ -377,10 +374,7 @@ SSH2_Channel_New(LIBSSH2_CHANNEL *channel, SSH2_SessionObj *session, int dealloc
 static void
 SSH2_Channel_dealloc(SSH2_ChannelObj *self)
 {
-	// libssh2_session_free clean all channel
-    //~ if (self->dealloc && self->channel != NULL)
-        //~ libssh2_channel_free(self->channel);
-
+	libssh2_channel_free(self->channel);
 	self->channel = NULL;
 
 	Py_DECREF(self->session);

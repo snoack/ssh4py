@@ -34,12 +34,10 @@ static PyMethodDef SSH2_SFTP_handle_methods[] =
  *
  * Arguments: cert    - A "real" SFTP_handle certificate object
  *            session - The Python object reperesenting the session
- *            dealloc - Boolean value to specify whether the destructor should
- *                      free the "real" SFTP_handle object
  * Returns:   The newly created SFTP_handle object
  */
 SSH2_SFTP_handleObj *
-SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, SSH2_SessionObj *session, int dealloc)
+SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, SSH2_SessionObj *session)
 {
 	SSH2_SFTP_handleObj *self;
 
@@ -49,7 +47,6 @@ SSH2_SFTP_handle_New(LIBSSH2_SFTP_HANDLE *sftphandle, SSH2_SessionObj *session, 
     self->sftphandle = sftphandle;
 	self->session = session;
 	Py_INCREF(session);
-    self->dealloc = dealloc;
 
     return self;
 }

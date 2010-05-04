@@ -66,7 +66,7 @@ SSH2_SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 
 	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
-	return (PyObject *)SSH2_SFTP_handle_New(handle, session, 1);
+	return (PyObject *)SSH2_SFTP_handle_New(handle, session);
 }
 
 static PyObject *
@@ -163,7 +163,7 @@ SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(handle == NULL, self->session)
 
-	return (PyObject *)SSH2_SFTP_handle_New(handle, self->session, 1);
+	return (PyObject *)SSH2_SFTP_handle_New(handle, self->session);
 }
 
 static PyObject *
@@ -486,12 +486,10 @@ static PyMethodDef SSH2_SFTP_methods[] =
  *
  * Arguments: cert    - A "real" SFTP certificate object
  *            session - The Python object reperesenting the session
- *            dealloc - Boolean value to specify whether the destructor should
- *                      free the "real" SFTP object
  * Returns:   The newly created SFTP object
  */
 SSH2_SFTPObj *
-SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session, int dealloc)
+SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session)
 {
     SSH2_SFTPObj *self;
 
@@ -501,7 +499,6 @@ SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session, int dealloc)
     self->sftp = sftp;
 	self->session = session;
 	Py_INCREF(session);
-    self->dealloc = dealloc;
 
     return self;
 }
@@ -515,11 +512,6 @@ SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session, int dealloc)
 static void
 SSH2_SFTP_dealloc(SSH2_SFTPObj *self)
 {
-    /* Sometimes we don't have to dealloc the "real" X509 pointer ourselves */
-    //~ if (self->dealloc) {
-		//~ free(self->sftp);
-	//~ }
-
 	Py_DECREF(self->session);
 	self->session = NULL;
 

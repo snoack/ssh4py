@@ -19,7 +19,7 @@ SSH2_Listener_accept(SSH2_ListenerObj *self)
 
 	HANDLE_SESSION_ERROR(channel == NULL, self->session)
 
-    return (PyObject *)SSH2_Channel_New(channel, self->session, 1);
+    return (PyObject *)SSH2_Channel_New(channel, self->session);
 }
 
 static PyObject *
@@ -50,12 +50,10 @@ static PyMethodDef SSH2_Listener_methods[] =
  *
  * Arguments: listener - A listener object
  *            session  - The Python object reperesenting the session
- *            dealloc  - Boolean value to specify whether the destructor should
- *                       free the listener object
  * Returns:   The newly created listener object
  */
 SSH2_ListenerObj *
-SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session, int dealloc)
+SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session)
 {
     SSH2_ListenerObj *self;
 
@@ -65,7 +63,6 @@ SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session, int deal
     self->listener = listener;
 	self->session = session;
 	Py_INCREF(session);
-	self->dealloc = dealloc;
 
     return self;
 }

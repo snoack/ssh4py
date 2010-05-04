@@ -48,23 +48,23 @@ if (cond) { \
 
 #define SSH2_Session_New_NUM         0
 #define SSH2_Session_New_RETURN      SSH2_SessionObj *
-#define SSH2_Session_New_PROTO       (LIBSSH2_SESSION *, int)
+#define SSH2_Session_New_PROTO       (LIBSSH2_SESSION *)
 
 #define SSH2_Channel_New_NUM         1
 #define SSH2_Channel_New_RETURN      SSH2_ChannelObj *
-#define SSH2_Channel_New_PROTO       (LIBSSH2_CHANNEL *, SSH2_SessionObj *, int)
+#define SSH2_Channel_New_PROTO       (LIBSSH2_CHANNEL *, SSH2_SessionObj *)
 
 #define SSH2_SFTP_New_NUM            2
 #define SSH2_SFTP_New_RETURN         SSH2_SFTPObj *
-#define SSH2_SFTP_New_PROTO          (LIBSSH2_SFTP *, SSH2_SessionObj *, int)
+#define SSH2_SFTP_New_PROTO          (LIBSSH2_SFTP *, SSH2_SessionObj *)
 
 #define SSH2_SFTP_handle_New_NUM     3
 #define SSH2_SFTP_handle_New_RETURN  SSH2_SFTP_handleObj *
-#define SSH2_SFTP_handle_New_PROTO   (LIBSSH2_SFTP_HANDLE *, SSH2_SessionObj *, int)
+#define SSH2_SFTP_handle_New_PROTO   (LIBSSH2_SFTP_HANDLE *, SSH2_SessionObj *)
 
 #define SSH2_Listener_New_NUM        4
 #define SSH2_Listener_New_RETURN     SSH2_ListenerObj *
-#define SSH2_Listener_New_PROTO      (LIBSSH2_LISTENER *, SSH2_SessionObj *, int)
+#define SSH2_Listener_New_PROTO      (LIBSSH2_LISTENER *, SSH2_SessionObj *)
 
 #define SSH2_API_pointers            5
 

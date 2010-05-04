@@ -17,11 +17,10 @@ extern  PyTypeObject      SSH2_Session_Type;
 #define SSH2_Session_Check(v) ((v)->ob_type == &SSH2_Session_Type)
 
 typedef struct {
-    PyObject_HEAD
+	PyObject_HEAD
 	LIBSSH2_SESSION *session;
-	PyObject          *socket, *callback;
-    int                  dealloc;
-    int                  opened;
+	PyObject        *socket, *callback;
+	int             opened;
 } SSH2_SessionObj;
 
 
