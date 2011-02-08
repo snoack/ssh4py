@@ -160,34 +160,35 @@ channel_set_blocking(SSH2_ChannelObj *self, PyObject *args)
 static PyObject *
 channel_read(SSH2_ChannelObj *self, PyObject *args)
 {
-	int bufsiz, ret=0, err=0;
+	int ret;
+	int bufsiz;
+	int stream_id = 0;
 	PyObject *buf;
 
-	if (!PyArg_ParseTuple(args, "i|i:read", &bufsiz, &err))
+	if (!PyArg_ParseTuple(args, "i|i:read", &bufsiz, &stream_id))
 		return NULL;
+
+	if (bufsiz < 0) {
+		PyErr_SetString(PyExc_ValueError, "negative size");
+		return NULL;
+	}
 
 	if ((buf = PyBytes_FromStringAndSize(NULL, bufsiz)) == NULL)
 		return NULL;
 
-	if (libssh2_channel_eof(self->channel)!=1) {
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_channel_read_ex(self->channel, stream_id, PyBytes_AS_STRING(buf), bufsiz);
+	Py_END_ALLOW_THREADS
 
-		Py_BEGIN_ALLOW_THREADS
-		if (err == 1) {
-			ret = libssh2_channel_read_stderr(self->channel, PyBytes_AS_STRING(buf), bufsiz);
-		} else {
-			ret = libssh2_channel_read(self->channel, PyBytes_AS_STRING(buf), bufsiz);
-		}
-		Py_END_ALLOW_THREADS
-
-		if (ret > 0) {
-			if (_PyBytes_Resize(&buf, ret) != 0)
-				return NULL;
-			return buf;
-		}
+	if (ret < 0) {
+		Py_DECREF(buf);
+		RAISE_SSH2_ERROR(self->session)
 	}
 
-	Py_DECREF(buf);
-	Py_RETURN_NONE;
+	if (bufsiz != ret && _PyBytes_Resize(&buf, ret) != 0)
+		return NULL;
+
+	return buf;
 }
 
 static PyObject *

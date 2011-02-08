@@ -138,29 +138,35 @@ SFTP_shutdown(SSH2_SFTPObj *self)
 static PyObject *
 SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 {
-	int bufsiz, ret=0;
+	int ret;
+	int bufsiz;
 	PyObject *buf;
 	SSH2_SFTP_handleObj *handle;
 
 	if (!PyArg_ParseTuple(args, "Oi:read", &handle, &bufsiz))
 		return NULL;
 
-	buf = PyBytes_FromStringAndSize(NULL, bufsiz);
-    if (buf == NULL)
-        return NULL;
+	if (bufsiz < 0) {
+		PyErr_SetString(PyExc_ValueError, "negative size");
+		return NULL;
+	}
+
+	if ((buf = PyBytes_FromStringAndSize(NULL, bufsiz)) == NULL)
+		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_sftp_read(handle->sftphandle, PyBytes_AS_STRING(buf), bufsiz);
 	Py_END_ALLOW_THREADS
 
-	if (ret > 0) {
-		if (_PyBytes_Resize(&buf, ret) != 0)
-			return NULL;
-		return buf;
+	if (ret < 0) {
+		Py_DECREF(buf);
+		RAISE_SSH2_ERROR(self->session)
 	}
 
-	Py_DECREF(buf);
-	Py_RETURN_NONE;
+	if (bufsiz != ret && _PyBytes_Resize(&buf, ret) != 0)
+		return NULL;
+
+	return buf;
 }
 
 static PyObject *

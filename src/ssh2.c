@@ -101,6 +101,8 @@ initlibssh2(void)
 	PyModule_AddIntConstant(module, "CALLBACK_MACERROR",   LIBSSH2_CALLBACK_MACERROR);
 	PyModule_AddIntConstant(module, "CALLBACK_X11",        LIBSSH2_CALLBACK_X11);
 
+	PyModule_AddIntConstant(module, "STDERR", SSH_EXTENDED_DATA_STDERR);
+
 	if (init_SSH2_Session(module) != 0)
 		goto error;
 	if (init_SSH2_Channel(module) != 0)
