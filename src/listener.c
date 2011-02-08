@@ -8,8 +8,32 @@
 #define SSH2_MODULE
 #include "ssh2.h"
 
+
+/*
+ * Constructor for Listener objects, never called by Python code directly
+ *
+ * Arguments: listener - A listener object
+ *            session  - The Python object reperesenting the session
+ * Returns:   The newly created listener object
+ */
+SSH2_ListenerObj *
+SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session)
+{
+	SSH2_ListenerObj *self;
+
+	if ((self = PyObject_New(SSH2_ListenerObj, &SSH2_Listener_Type)) == NULL)
+		return NULL;
+
+	self->listener = listener;
+	Py_INCREF(session);
+	self->session = session;
+
+	return self;
+}
+
+
 static PyObject *
-SSH2_Listener_accept(SSH2_ListenerObj *self)
+listener_accept(SSH2_ListenerObj *self)
 {
 	LIBSSH2_CHANNEL *channel;
 
@@ -23,7 +47,7 @@ SSH2_Listener_accept(SSH2_ListenerObj *self)
 }
 
 static PyObject *
-SSH2_Listener_cancel(SSH2_ListenerObj *self)
+listener_cancel(SSH2_ListenerObj *self)
 {
 	int ret;
 
@@ -37,35 +61,12 @@ SSH2_Listener_cancel(SSH2_ListenerObj *self)
 }
 
 
-static PyMethodDef SSH2_Listener_methods[] =
+static PyMethodDef listener_methods[] =
 {
-	{"accept", (PyCFunction)SSH2_Listener_accept, METH_NOARGS},
-	{"cancel", (PyCFunction)SSH2_Listener_cancel, METH_NOARGS},
+	{"accept", (PyCFunction)listener_accept, METH_NOARGS},
+	{"cancel", (PyCFunction)listener_cancel, METH_NOARGS},
 	{NULL, NULL}
 };
-
-
-/*
- * Constructor for Listener objects, never called by Python code directly
- *
- * Arguments: listener - A listener object
- *            session  - The Python object reperesenting the session
- * Returns:   The newly created listener object
- */
-SSH2_ListenerObj *
-SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session)
-{
-    SSH2_ListenerObj *self;
-
-	if ((self = PyObject_New(SSH2_ListenerObj, &SSH2_Listener_Type)) == NULL)
-		return NULL;
-
-    self->listener = listener;
-	self->session = session;
-	Py_INCREF(session);
-
-    return self;
-}
 
 /*
  * Deallocate the memory used by the Listener object
@@ -74,7 +75,7 @@ SSH2_Listener_New(LIBSSH2_LISTENER *listener, SSH2_SessionObj *session)
  * Returns:   None
  */
 static void
-SSH2_Listener_dealloc(SSH2_ListenerObj *self)
+listener_dealloc(SSH2_ListenerObj *self)
 {
 	Py_DECREF(self->session);
 	self->session = NULL;
@@ -84,43 +85,43 @@ SSH2_Listener_dealloc(SSH2_ListenerObj *self)
 
 PyTypeObject SSH2_Listener_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	"Listener",                        /* tp_name */
-	sizeof(SSH2_ListenerObj),          /* tp_basicsize */
-	0,                                 /* tp_itemsize */
-	(destructor)SSH2_Listener_dealloc, /* tp_dealloc */
-	0,                                 /* tp_print */
-	0,                                 /* tp_getattr */
-	0,                                 /* tp_setattr */
-	0,                                 /* tp_compare */
-	0,                                 /* tp_repr */
-	0,                                 /* tp_as_number */
-	0,                                 /* tp_as_sequence */
-	0,                                 /* tp_as_mapping */
-	0,                                 /* tp_hash  */
-	0,                                 /* tp_call */
-	0,                                 /* tp_str */
-	0,                                 /* tp_getattro */
-	0,                                 /* tp_setattro */
-	0,                                 /* tp_as_buffer */
-	Py_TPFLAGS_DEFAULT,                /* tp_flags */
-	0,                                 /* tp_doc */
-	0,                                 /* tp_traverse */
-	0,                                 /* tp_clear */
-	0,                                 /* tp_richcompare */
-	0,                                 /* tp_weaklistoffset */
-	0,                                 /* tp_iter */
-	0,                                 /* tp_iternext */
-	SSH2_Listener_methods,             /* tp_methods */
-	0,                                 /* tp_members */
-	0,                                 /* tp_getset */
-	0,                                 /* tp_base */
-	0,                                 /* tp_dict */
-	0,                                 /* tp_descr_get */
-	0,                                 /* tp_descr_set */
-	0,                                 /* tp_dictoffset */
-	0,                                 /* tp_init */
-	0,                                 /* tp_alloc */
-	0,                                 /* tp_new */
+	"Listener",                   /* tp_name */
+	sizeof(SSH2_ListenerObj),     /* tp_basicsize */
+	0,                            /* tp_itemsize */
+	(destructor)listener_dealloc, /* tp_dealloc */
+	0,                            /* tp_print */
+	0,                            /* tp_getattr */
+	0,                            /* tp_setattr */
+	0,                            /* tp_compare */
+	0,                            /* tp_repr */
+	0,                            /* tp_as_number */
+	0,                            /* tp_as_sequence */
+	0,                            /* tp_as_mapping */
+	0,                            /* tp_hash  */
+	0,                            /* tp_call */
+	0,                            /* tp_str */
+	0,                            /* tp_getattro */
+	0,                            /* tp_setattro */
+	0,                            /* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT,           /* tp_flags */
+	0,                            /* tp_doc */
+	0,                            /* tp_traverse */
+	0,                            /* tp_clear */
+	0,                            /* tp_richcompare */
+	0,                            /* tp_weaklistoffset */
+	0,                            /* tp_iter */
+	0,                            /* tp_iternext */
+	listener_methods,             /* tp_methods */
+	0,                            /* tp_members */
+	0,                            /* tp_getset */
+	0,                            /* tp_base */
+	0,                            /* tp_dict */
+	0,                            /* tp_descr_get */
+	0,                            /* tp_descr_set */
+	0,                            /* tp_dictoffset */
+	0,                            /* tp_init */
+	0,                            /* tp_alloc */
+	0,                            /* tp_new */
 };
 
 /*
@@ -136,7 +137,7 @@ init_SSH2_Listener(PyObject *module)
 		return -1;
 
 	Py_INCREF(&SSH2_Listener_Type);
-	if (PyModule_AddObject(module, "ListenerType", (PyObject *)&SSH2_Listener_Type) == 0)
+	if (PyModule_AddObject(module, "Listener", (PyObject *)&SSH2_Listener_Type) == 0)
 		return 0;
 
 	Py_DECREF(&SSH2_Listener_Type);

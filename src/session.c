@@ -9,8 +9,34 @@
 #include "ssh2.h"
 
 
+/*
+ * Constructor for Session objects, never called by Python code directly
+ *
+ * Arguments: cert    - A "real" Session certificate object
+ * Returns:   The newly created Session object
+ */
+SSH2_SessionObj *
+SSH2_Session_New(LIBSSH2_SESSION *session)
+{
+	SSH2_SessionObj *self;
+
+	if ((self = PyObject_New(SSH2_SessionObj, &SSH2_Session_Type)) == NULL)
+		return NULL;
+
+	self->session = session;
+	self->opened = 0;
+	self->socket=NULL;
+	Py_INCREF(Py_None);
+	self->callback = Py_None;
+
+	libssh2_banner_set(session, LIBSSH2_SSH_DEFAULT_BANNER " Python");
+
+	return self;
+}
+
+
 static PyObject *
-SSH2_Session_set_banner(SSH2_SessionObj *self, PyObject *args)
+session_set_banner(SSH2_SessionObj *self, PyObject *args)
 {
 	char *banner;
 
@@ -24,7 +50,7 @@ SSH2_Session_set_banner(SSH2_SessionObj *self, PyObject *args)
 
 
 static PyObject *
-SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
+session_startup(SSH2_SessionObj *self, PyObject *args)
 {
 	PyObject *sock;
 	int ret;
@@ -52,7 +78,7 @@ SSH2_Session_startup(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_close(SSH2_SessionObj *self, PyObject *args)
+session_close(SSH2_SessionObj *self, PyObject *args)
 {
 	char *reason = "end";
 	int ret;
@@ -72,13 +98,13 @@ SSH2_Session_close(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_is_authenticated(SSH2_SessionObj *self)
+session_is_authenticated(SSH2_SessionObj *self)
 {
 	return PyBool_FromLong(libssh2_userauth_authenticated(self->session));
 }
 
 static PyObject *
-SSH2_Session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
+session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
 {
 	char *user;
 	char *ret;
@@ -95,7 +121,7 @@ SSH2_Session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
+session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 {
 	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5;
 	const char *hash;
@@ -111,7 +137,7 @@ SSH2_Session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_set_password(SSH2_SessionObj *self, PyObject *args)
+session_set_password(SSH2_SessionObj *self, PyObject *args)
 {
 	unsigned char *login;
 	unsigned char *pwd;
@@ -130,7 +156,7 @@ SSH2_Session_set_password(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_set_public_key(SSH2_SessionObj *self, PyObject *args)
+session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 {
 	char *login;
 	char *publickey;
@@ -152,7 +178,7 @@ SSH2_Session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 
 
 static PyObject *
-SSH2_Session_get_methods(SSH2_SessionObj *self)
+session_get_methods(SSH2_SessionObj *self)
 {
 	const char *kex, *hostkey, *crypt_cs, *crypt_sc, *mac_cs, *mac_sc, *comp_cs, *comp_sc, *lang_cs, *lang_sc;
 	PyObject *methods;
@@ -184,7 +210,7 @@ SSH2_Session_get_methods(SSH2_SessionObj *self)
 }
 
 static PyObject *
-SSH2_Session_set_method(SSH2_SessionObj *self, PyObject *args)
+session_set_method(SSH2_SessionObj *self, PyObject *args)
 {
 	int ret;
 	int method;
@@ -205,7 +231,7 @@ static int global_callback() {
 }
 
 static PyObject *
-SSH2_Session_set_callback(SSH2_SessionObj *self, PyObject *args)
+session_set_callback(SSH2_SessionObj *self, PyObject *args)
 {
 	// Don't work, not yet
 	int cbtype;
@@ -229,13 +255,13 @@ SSH2_Session_set_callback(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_get_blocking(SSH2_SessionObj *self)
+session_get_blocking(SSH2_SessionObj *self)
 {
 	return PyBool_FromLong(libssh2_session_get_blocking(self->session));
 }
 
 static PyObject *
-SSH2_Session_set_blocking(SSH2_SessionObj *self, PyObject *args)
+session_set_blocking(SSH2_SessionObj *self, PyObject *args)
 {
 	int blocking;
 
@@ -249,7 +275,7 @@ SSH2_Session_set_blocking(SSH2_SessionObj *self, PyObject *args)
 
 
 static PyObject *
-SSH2_Session_channel(SSH2_SessionObj *self)
+session_channel(SSH2_SessionObj *self)
 {
 	LIBSSH2_CHANNEL *channel;
 
@@ -263,7 +289,7 @@ SSH2_Session_channel(SSH2_SessionObj *self)
 }
 
 static PyObject *
-SSH2_Session_scp_recv(SSH2_SessionObj *self, PyObject *args)
+session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 {
 	char *path;
 	LIBSSH2_CHANNEL *channel;
@@ -282,7 +308,7 @@ SSH2_Session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_scp_send(SSH2_SessionObj *self, PyObject *args)
+session_scp_send(SSH2_SessionObj *self, PyObject *args)
 {
 	char *path;
 	int mode;
@@ -302,7 +328,7 @@ SSH2_Session_scp_send(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_sftp(SSH2_SessionObj *self)
+session_sftp(SSH2_SessionObj *self)
 {
 	LIBSSH2_SFTP *sftp;
 
@@ -320,7 +346,7 @@ SSH2_Session_sftp(SSH2_SessionObj *self)
 
 
 static PyObject *
-SSH2_Session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
+session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 {
 	char *host;
 	char *shost = "127.0.0.1";
@@ -341,7 +367,7 @@ SSH2_Session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_Session_forward_listen(SSH2_SessionObj *self, PyObject *args)
+session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 {
 	char *host;
 	int port;
@@ -361,56 +387,34 @@ SSH2_Session_forward_listen(SSH2_SessionObj *self, PyObject *args)
     return (PyObject *)SSH2_Listener_New(listener, self);
 }
 
-static PyMethodDef SSH2_Session_methods[] =
+static PyMethodDef session_methods[] =
 {
-	{"set_banner",                 (PyCFunction)SSH2_Session_set_banner,                 METH_VARARGS},
-	{"startup",                    (PyCFunction)SSH2_Session_startup,                    METH_VARARGS},
-	{"close",                      (PyCFunction)SSH2_Session_close,                      METH_VARARGS},
-	{"is_authenticated",           (PyCFunction)SSH2_Session_is_authenticated,           METH_NOARGS},
-	{"get_authentication_methods", (PyCFunction)SSH2_Session_get_authentication_methods, METH_VARARGS},
-	{"get_fingerprint",            (PyCFunction)SSH2_Session_get_fingerprint,            METH_VARARGS},
-	{"set_password",               (PyCFunction)SSH2_Session_set_password,               METH_VARARGS},
-	{"set_public_key",             (PyCFunction)SSH2_Session_set_public_key,             METH_VARARGS},
-	{"get_methods",                (PyCFunction)SSH2_Session_get_methods,                METH_NOARGS},
-	{"set_method",                 (PyCFunction)SSH2_Session_set_method,                 METH_VARARGS},
-	{"set_callback",               (PyCFunction)SSH2_Session_set_callback,               METH_VARARGS},
-	{"get_blocking",               (PyCFunction)SSH2_Session_get_blocking,               METH_NOARGS},
-	{"set_blocking",               (PyCFunction)SSH2_Session_set_blocking,               METH_VARARGS},
-	{"channel",                    (PyCFunction)SSH2_Session_channel,                    METH_NOARGS},
-	{"scp_recv",                   (PyCFunction)SSH2_Session_scp_recv,                   METH_VARARGS},
-	{"scp_send",                   (PyCFunction)SSH2_Session_scp_send,                   METH_VARARGS},
-	{"sftp",                       (PyCFunction)SSH2_Session_sftp,                       METH_NOARGS},
-	{"direct_tcpip",               (PyCFunction)SSH2_Session_direct_tcpip,               METH_VARARGS},
-	{"forward_listen",             (PyCFunction)SSH2_Session_forward_listen,             METH_VARARGS},
+	{"set_banner",                 (PyCFunction)session_set_banner,                 METH_VARARGS},
+	{"startup",                    (PyCFunction)session_startup,                    METH_VARARGS},
+	{"close",                      (PyCFunction)session_close,                      METH_VARARGS},
+	{"is_authenticated",           (PyCFunction)session_is_authenticated,           METH_NOARGS},
+	{"get_authentication_methods", (PyCFunction)session_get_authentication_methods, METH_VARARGS},
+	{"get_fingerprint",            (PyCFunction)session_get_fingerprint,            METH_VARARGS},
+	{"set_password",               (PyCFunction)session_set_password,               METH_VARARGS},
+	{"set_public_key",             (PyCFunction)session_set_public_key,             METH_VARARGS},
+	{"get_methods",                (PyCFunction)session_get_methods,                METH_NOARGS},
+	{"set_method",                 (PyCFunction)session_set_method,                 METH_VARARGS},
+	{"set_callback",               (PyCFunction)session_set_callback,               METH_VARARGS},
+	{"get_blocking",               (PyCFunction)session_get_blocking,               METH_NOARGS},
+	{"set_blocking",               (PyCFunction)session_set_blocking,               METH_VARARGS},
+	{"channel",                    (PyCFunction)session_channel,                    METH_NOARGS},
+	{"scp_recv",                   (PyCFunction)session_scp_recv,                   METH_VARARGS},
+	{"scp_send",                   (PyCFunction)session_scp_send,                   METH_VARARGS},
+	{"sftp",                       (PyCFunction)session_sftp,                       METH_NOARGS},
+	{"direct_tcpip",               (PyCFunction)session_direct_tcpip,               METH_VARARGS},
+	{"forward_listen",             (PyCFunction)session_forward_listen,             METH_VARARGS},
 	{NULL, NULL}
 };
 
-
-/*
- * Constructor for Session objects, never called by Python code directly
- *
- * Arguments: cert    - A "real" Session certificate object
- * Returns:   The newly created Session object
- */
-SSH2_SessionObj *
-SSH2_Session_New(LIBSSH2_SESSION *session)
+static PyObject *
+session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    SSH2_SessionObj *self;
-
-    self = PyObject_New(SSH2_SessionObj, &SSH2_Session_Type);
-
-    if (self == NULL)
-        return NULL;
-
-    self->session = session;
-    self->opened = 0;
-	self->socket=NULL;
-	self->callback = Py_None;
-    Py_INCREF(Py_None);
-
-	libssh2_banner_set(session, LIBSSH2_SSH_DEFAULT_BANNER " Python");
-
-    return self;
+	return (PyObject *) SSH2_Session_New(libssh2_session_init());
 }
 
 /*
@@ -420,7 +424,7 @@ SSH2_Session_New(LIBSSH2_SESSION *session)
  * Returns:   None
  */
 static void
-SSH2_Session_dealloc(SSH2_SessionObj *self)
+session_dealloc(SSH2_SessionObj *self)
 {
 	if (self->opened)
 		libssh2_session_disconnect(self->session, "end");
@@ -439,43 +443,43 @@ SSH2_Session_dealloc(SSH2_SessionObj *self)
 
 PyTypeObject SSH2_Session_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	"Session",                        /* tp_name */
-	sizeof(SSH2_SessionObj),          /* tp_basicsize */
-	0,                                /* tp_itemsize */
-	(destructor)SSH2_Session_dealloc, /* tp_dealloc */
-	0,                                /* tp_print */
-	0,                                /* tp_getattr */
-	0,                                /* tp_setattr */
-	0,                                /* tp_compare */
-	0,                                /* tp_repr */
-	0,                                /* tp_as_number */
-	0,                                /* tp_as_sequence */
-	0,                                /* tp_as_mapping */
-	0,                                /* tp_hash  */
-	0,                                /* tp_call */
-	0,                                /* tp_str */
-	0,                                /* tp_getattro */
-	0,                                /* tp_setattro */
-	0,                                /* tp_as_buffer */
-	Py_TPFLAGS_DEFAULT,               /* tp_flags */
-	0,                                /* tp_doc */
-	0,                                /* tp_traverse */
-	0,                                /* tp_clear */
-	0,                                /* tp_richcompare */
-	0,                                /* tp_weaklistoffset */
-	0,                                /* tp_iter */
-	0,                                /* tp_iternext */
-	SSH2_Session_methods,             /* tp_methods */
-	0,                                /* tp_members */
-	0,                                /* tp_getset */
-	0,                                /* tp_base */
-	0,                                /* tp_dict */
-	0,                                /* tp_descr_get */
-	0,                                /* tp_descr_set */
-	0,                                /* tp_dictoffset */
-	0,                                /* tp_init */
-	0,                                /* tp_alloc */
-	0,                                /* tp_new */
+	"Session",                   /* tp_name */
+	sizeof(SSH2_SessionObj),     /* tp_basicsize */
+	0,                           /* tp_itemsize */
+	(destructor)session_dealloc, /* tp_dealloc */
+	0,                           /* tp_print */
+	0,                           /* tp_getattr */
+	0,                           /* tp_setattr */
+	0,                           /* tp_compare */
+	0,                           /* tp_repr */
+	0,                           /* tp_as_number */
+	0,                           /* tp_as_sequence */
+	0,                           /* tp_as_mapping */
+	0,                           /* tp_hash  */
+	0,                           /* tp_call */
+	0,                           /* tp_str */
+	0,                           /* tp_getattro */
+	0,                           /* tp_setattro */
+	0,                           /* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT,          /* tp_flags */
+	0,                           /* tp_doc */
+	0,                           /* tp_traverse */
+	0,                           /* tp_clear */
+	0,                           /* tp_richcompare */
+	0,                           /* tp_weaklistoffset */
+	0,                           /* tp_iter */
+	0,                           /* tp_iternext */
+	session_methods,             /* tp_methods */
+	0,                           /* tp_members */
+	0,                           /* tp_getset */
+	0,                           /* tp_base */
+	0,                           /* tp_dict */
+	0,                           /* tp_descr_get */
+	0,                           /* tp_descr_set */
+	0,                           /* tp_dictoffset */
+	0,                           /* tp_init */
+	0,                           /* tp_alloc */
+	session_new,                 /* tp_new */
 };
 
 /*
@@ -491,7 +495,7 @@ init_SSH2_Session(PyObject *module)
 		return -1;
 
 	Py_INCREF(&SSH2_Session_Type);
-	if (PyModule_AddObject(module, "SessionType", (PyObject *)&SSH2_Session_Type) == 0)
+	if (PyModule_AddObject(module, "Session", (PyObject *)&SSH2_Session_Type) == 0)
 		return 0;
 
 	Py_DECREF(&SSH2_Session_Type);

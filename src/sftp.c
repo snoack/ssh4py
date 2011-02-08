@@ -8,6 +8,30 @@
 #define SSH2_MODULE
 #include "ssh2.h"
 
+
+/*
+ * Constructor for SFTP objects, never called by Python code directly
+ *
+ * Arguments: cert    - A "real" SFTP certificate object
+ *            session - The Python object reperesenting the session
+ * Returns:   The newly created SFTP object
+ */
+SSH2_SFTPObj *
+SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session)
+{
+	SSH2_SFTPObj *self;
+
+	if ((self = PyObject_New(SSH2_SFTPObj, &SSH2_SFTP_Type)) == NULL)
+		return NULL;
+
+	self->sftp = sftp;
+	Py_INCREF(session);
+	self->session = session;
+
+	return self;
+}
+
+
 unsigned long get_flags(char *mode) {
 	unsigned long flags = 0;
 
@@ -52,7 +76,7 @@ get_attrs(LIBSSH2_SFTP_ATTRIBUTES *attr)
 
 
 static PyObject *
-SSH2_SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
+SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 {
 	LIBSSH2_SFTP_HANDLE *handle;
 	char *path;
@@ -70,7 +94,7 @@ SSH2_SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
+SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
@@ -104,7 +128,7 @@ SSH2_SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
+SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
@@ -147,7 +171,7 @@ SSH2_SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
+SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_HANDLE *handle;
 	char *path;
@@ -167,7 +191,7 @@ SSH2_SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_shutdown(SSH2_SFTPObj *self)
+SFTP_shutdown(SSH2_SFTPObj *self)
 {
 	int ret;
 	// libssh2_sftp_shutdown == libssh2_channel_free(sftp->channel)
@@ -181,7 +205,7 @@ SSH2_SFTP_shutdown(SSH2_SFTPObj *self)
 }
 
 static PyObject *
-SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
+SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 {
 	int bufsiz, ret=0;
 	PyObject *buf;
@@ -209,7 +233,7 @@ SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
+SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *msg;
 	int len, ret=0;
@@ -232,7 +256,7 @@ SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
+SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 {
 	int ret;
 	SSH2_SFTP_handleObj *handle;
@@ -248,7 +272,7 @@ SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
+SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 {
 	SSH2_SFTP_handleObj *handle;
 	unsigned long offset=0;
@@ -264,7 +288,7 @@ SSH2_SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
+SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	int ret;
@@ -282,7 +306,7 @@ SSH2_SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
+SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *src;
 	char *dst;
@@ -301,7 +325,7 @@ SSH2_SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
+SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	long mode = 0755;
@@ -320,7 +344,7 @@ SSH2_SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
+SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	int ret;
@@ -338,7 +362,7 @@ SSH2_SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
+SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	int lpath=0, ret=0, len=1024;
@@ -368,7 +392,7 @@ SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
+SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	char *target;
@@ -390,7 +414,7 @@ SSH2_SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 
 
 static PyObject *
-SSH2_SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
+SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 {
 	unsigned char *path;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
@@ -411,7 +435,7 @@ SSH2_SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SSH2_SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
+SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
@@ -458,50 +482,27 @@ SSH2_SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyMethodDef SSH2_SFTP_methods[] =
+static PyMethodDef SFTP_methods[] =
 {
-	{"open_dir", (PyCFunction)SSH2_SFTP_open_dir, METH_VARARGS},
-	{"read_dir", (PyCFunction)SSH2_SFTP_read_dir, METH_VARARGS},
-	{"list_dir", (PyCFunction)SSH2_SFTP_list_dir, METH_VARARGS},
-	{"open",     (PyCFunction)SSH2_SFTP_open,     METH_VARARGS},
-	{"shutdown", (PyCFunction)SSH2_SFTP_shutdown, METH_NOARGS},
-	{"read",     (PyCFunction)SSH2_SFTP_read,     METH_VARARGS},
-	{"write",    (PyCFunction)SSH2_SFTP_write,    METH_VARARGS},
-	{"tell",     (PyCFunction)SSH2_SFTP_tell,     METH_VARARGS},
-	{"seek",     (PyCFunction)SSH2_SFTP_seek,     METH_VARARGS},
-	{"unlink",   (PyCFunction)SSH2_SFTP_unlink,   METH_VARARGS},
-	{"rename",   (PyCFunction)SSH2_SFTP_rename,   METH_VARARGS},
-	{"mkdir",    (PyCFunction)SSH2_SFTP_mkdir,    METH_VARARGS},
-	{"rmdir",    (PyCFunction)SSH2_SFTP_rmdir,    METH_VARARGS},
-	{"realpath", (PyCFunction)SSH2_SFTP_realpath, METH_VARARGS},
-	{"symlinkr", (PyCFunction)SSH2_SFTP_symlink,  METH_VARARGS},
-	{"get_stat", (PyCFunction)SSH2_SFTP_get_stat, METH_VARARGS},
-	{"set_stat", (PyCFunction)SSH2_SFTP_set_stat, METH_VARARGS},
+	{"open_dir", (PyCFunction)SFTP_open_dir, METH_VARARGS},
+	{"read_dir", (PyCFunction)SFTP_read_dir, METH_VARARGS},
+	{"list_dir", (PyCFunction)SFTP_list_dir, METH_VARARGS},
+	{"open",     (PyCFunction)SFTP_open,     METH_VARARGS},
+	{"shutdown", (PyCFunction)SFTP_shutdown, METH_NOARGS},
+	{"read",     (PyCFunction)SFTP_read,     METH_VARARGS},
+	{"write",    (PyCFunction)SFTP_write,    METH_VARARGS},
+	{"tell",     (PyCFunction)SFTP_tell,     METH_VARARGS},
+	{"seek",     (PyCFunction)SFTP_seek,     METH_VARARGS},
+	{"unlink",   (PyCFunction)SFTP_unlink,   METH_VARARGS},
+	{"rename",   (PyCFunction)SFTP_rename,   METH_VARARGS},
+	{"mkdir",    (PyCFunction)SFTP_mkdir,    METH_VARARGS},
+	{"rmdir",    (PyCFunction)SFTP_rmdir,    METH_VARARGS},
+	{"realpath", (PyCFunction)SFTP_realpath, METH_VARARGS},
+	{"symlinkr", (PyCFunction)SFTP_symlink,  METH_VARARGS},
+	{"get_stat", (PyCFunction)SFTP_get_stat, METH_VARARGS},
+	{"set_stat", (PyCFunction)SFTP_set_stat, METH_VARARGS},
 	{NULL, NULL}
 };
-
-
-/*
- * Constructor for SFTP objects, never called by Python code directly
- *
- * Arguments: cert    - A "real" SFTP certificate object
- *            session - The Python object reperesenting the session
- * Returns:   The newly created SFTP object
- */
-SSH2_SFTPObj *
-SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session)
-{
-    SSH2_SFTPObj *self;
-
-	if ((self = PyObject_New(SSH2_SFTPObj, &SSH2_SFTP_Type)) == NULL)
-		return NULL;
-
-    self->sftp = sftp;
-	self->session = session;
-	Py_INCREF(session);
-
-    return self;
-}
 
 /*
  * Deallocate the memory used by the SFTP object
@@ -510,7 +511,7 @@ SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session)
  * Returns:   None
  */
 static void
-SSH2_SFTP_dealloc(SSH2_SFTPObj *self)
+SFTP_dealloc(SSH2_SFTPObj *self)
 {
 	Py_DECREF(self->session);
 	self->session = NULL;
@@ -520,43 +521,43 @@ SSH2_SFTP_dealloc(SSH2_SFTPObj *self)
 
 PyTypeObject SSH2_SFTP_Type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	"SFTP",                        /* tp_name */
-	sizeof(SSH2_SFTPObj),          /* tp_basicsize */
-	0,                             /* tp_itemsize */
-	(destructor)SSH2_SFTP_dealloc, /* tp_dealloc */
-	0,                             /* tp_print */
-	0,                             /* tp_getattr */
-	0,                             /* tp_setattr */
-	0,                             /* tp_compare */
-	0,                             /* tp_repr */
-	0,                             /* tp_as_number */
-	0,                             /* tp_as_sequence */
-	0,                             /* tp_as_mapping */
-	0,                             /* tp_hash  */
-	0,                             /* tp_call */
-	0,                             /* tp_str */
-	0,                             /* tp_getattro */
-	0,                             /* tp_setattro */
-	0,                             /* tp_as_buffer */
-	Py_TPFLAGS_DEFAULT,            /* tp_flags */
-	0,                             /* tp_doc */
-	0,                             /* tp_traverse */
-	0,                             /* tp_clear */
-	0,                             /* tp_richcompare */
-	0,                             /* tp_weaklistoffset */
-	0,                             /* tp_iter */
-	0,                             /* tp_iternext */
-	SSH2_SFTP_methods,             /* tp_methods */
-	0,                             /* tp_members */
-	0,                             /* tp_getset */
-	0,                             /* tp_base */
-	0,                             /* tp_dict */
-	0,                             /* tp_descr_get */
-	0,                             /* tp_descr_set */
-	0,                             /* tp_dictoffset */
-	0,                             /* tp_init */
-	0,                             /* tp_alloc */
-	0,                             /* tp_new */
+	"SFTP",                   /* tp_name */
+	sizeof(SSH2_SFTPObj),     /* tp_basicsize */
+	0,                        /* tp_itemsize */
+	(destructor)SFTP_dealloc, /* tp_dealloc */
+	0,                        /* tp_print */
+	0,                        /* tp_getattr */
+	0,                        /* tp_setattr */
+	0,                        /* tp_compare */
+	0,                        /* tp_repr */
+	0,                        /* tp_as_number */
+	0,                        /* tp_as_sequence */
+	0,                        /* tp_as_mapping */
+	0,                        /* tp_hash  */
+	0,                        /* tp_call */
+	0,                        /* tp_str */
+	0,                        /* tp_getattro */
+	0,                        /* tp_setattro */
+	0,                        /* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT,       /* tp_flags */
+	0,                        /* tp_doc */
+	0,                        /* tp_traverse */
+	0,                        /* tp_clear */
+	0,                        /* tp_richcompare */
+	0,                        /* tp_weaklistoffset */
+	0,                        /* tp_iter */
+	0,                        /* tp_iternext */
+	SFTP_methods,             /* tp_methods */
+	0,                        /* tp_members */
+	0,                        /* tp_getset */
+	0,                        /* tp_base */
+	0,                        /* tp_dict */
+	0,                        /* tp_descr_get */
+	0,                        /* tp_descr_set */
+	0,                        /* tp_dictoffset */
+	0,                        /* tp_init */
+	0,                        /* tp_alloc */
+	0,                        /* tp_new */
 };
 
 /*
@@ -572,7 +573,7 @@ init_SSH2_SFTP(PyObject *module)
 		return -1;
 
 	Py_INCREF(&SSH2_SFTP_Type);
-	if (PyModule_AddObject(module, "SFTPType", (PyObject *)&SSH2_SFTP_Type) == 0)
+	if (PyModule_AddObject(module, "SFTP", (PyObject *)&SSH2_SFTP_Type) == 0)
 		return 0;
 
 	Py_DECREF(&SSH2_SFTP_Type);
