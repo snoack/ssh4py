@@ -67,7 +67,7 @@ session_startup(SSH2_SessionObj *self, PyObject *args)
 	ret=libssh2_session_startup(self->session, fd);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self)
+	CHECK_RETURN_CODE(ret, self)
 
 	Py_INCREF(sock);
     self->socket = sock;
@@ -89,7 +89,7 @@ session_close(SSH2_SessionObj *self, PyObject *args)
 	ret = libssh2_session_disconnect(self->session, reason);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self)
+	CHECK_RETURN_CODE(ret, self)
 
 	self->opened = 0;
 
@@ -148,7 +148,7 @@ session_set_password(SSH2_SessionObj *self, PyObject *args)
 	ret = libssh2_userauth_password(self->session, login, pwd);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self)
+	CHECK_RETURN_CODE(ret, self)
 
 	Py_RETURN_NONE;
 }
@@ -169,7 +169,7 @@ session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 	ret = libssh2_userauth_publickey_fromfile(self->session, login, publickey, privatekey, passphrase);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self)
+	CHECK_RETURN_CODE(ret, self)
 
 	Py_RETURN_NONE;
 }
@@ -202,7 +202,7 @@ session_set_method(SSH2_SessionObj *self, PyObject *args)
 
 	ret = libssh2_session_method_pref(self->session, method, pref);
 
-	HANDLE_SESSION_ERROR(ret < 0, self);
+	CHECK_RETURN_CODE(ret, self)
 
 	Py_RETURN_NONE;
 }
@@ -264,7 +264,7 @@ session_channel(SSH2_SessionObj *self)
 	channel = libssh2_channel_open_session(self->session);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(channel == NULL, self)
+	CHECK_RETURN_POINTER(channel, self)
 
     return (PyObject *)SSH2_Channel_New(channel, self);
 }
@@ -283,7 +283,7 @@ session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_scp_recv(self->session, path, NULL); // &sb
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(channel == NULL, self)
+	CHECK_RETURN_POINTER(channel, self)
 
     return (PyObject *)SSH2_Channel_New(channel, self);
 }
@@ -303,7 +303,7 @@ session_scp_send(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_scp_send(self->session, path, mode, filesize);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(channel == NULL, self)
+	CHECK_RETURN_POINTER(channel, self)
 
     return (PyObject *)SSH2_Channel_New(channel, self);
 }
@@ -342,7 +342,7 @@ session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 	channel = libssh2_channel_direct_tcpip_ex(self->session, host, port, shost, sport);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(channel == NULL, self)
+	CHECK_RETURN_POINTER(channel, self)
 
     return (PyObject *)SSH2_Channel_New(channel, self);
 }
@@ -363,7 +363,7 @@ session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 	listener = libssh2_channel_forward_listen_ex(self->session, host, port, bound_port, queue_maxsize);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(listener == NULL, self)
+	CHECK_RETURN_POINTER(listener, self)
 
     return (PyObject *)SSH2_Listener_New(listener, self);
 }

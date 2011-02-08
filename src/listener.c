@@ -40,7 +40,7 @@ listener_accept(SSH2_ListenerObj *self)
 	channel = libssh2_channel_forward_accept(self->listener);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(channel == NULL, self->session)
+	CHECK_RETURN_POINTER(channel, self->session)
 
     return (PyObject *)SSH2_Channel_New(channel, self->session);
 }
@@ -54,7 +54,7 @@ listener_cancel(SSH2_ListenerObj *self)
 	ret = libssh2_channel_forward_cancel(self->listener);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }

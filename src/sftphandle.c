@@ -40,7 +40,7 @@ SFTP_handle_close(SSH2_SFTP_handleObj *self)
 	ret = libssh2_sftp_close_handle(self->sftphandle);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }

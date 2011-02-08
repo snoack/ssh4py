@@ -73,7 +73,7 @@ SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 	handle = libssh2_sftp_opendir(self->sftp, path);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(handle == NULL, self->session)
+	CHECK_RETURN_POINTER(handle, self->session)
 
 	return (PyObject *)SSH2_SFTP_handle_New(handle, session);
 }
@@ -84,21 +84,21 @@ SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
 	char buf[MAX_FILENAME_LENGHT];
-	int len;
+	int ret;
 
 	if (!PyArg_ParseTuple(args, "O:read_dir", &handle))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	len = libssh2_sftp_readdir(handle->sftphandle, buf, sizeof(buf), &attr);
+	ret = libssh2_sftp_readdir(handle->sftphandle, buf, sizeof(buf), &attr);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(len < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
-	if (len == 0)
+	if (ret == 0)
 		Py_RETURN_NONE;
 
-	return Py_BuildValue("(s#O)", buf, len, get_attrs(&attr));
+	return Py_BuildValue("(s#O)", buf, ret, get_attrs(&attr));
 }
 
 static PyObject *
@@ -116,7 +116,7 @@ SFTP_open(SSH2_SFTPObj *self, PyObject *args)
 	handle = libssh2_sftp_open(self->sftp, path, get_flags(flags), mode);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(handle == NULL, self->session)
+	CHECK_RETURN_POINTER(handle, self->session)
 
 	return (PyObject *)SSH2_SFTP_handle_New(handle, self->session);
 }
@@ -130,7 +130,7 @@ SFTP_shutdown(SSH2_SFTPObj *self)
 	ret = libssh2_sftp_shutdown(self->sftp);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -182,7 +182,7 @@ SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_write(handle->sftphandle, msg, len);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	return Py_BuildValue("n", ret);
 }
@@ -232,7 +232,7 @@ SFTP_unlink(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_unlink(self->sftp, path);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session);
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -251,7 +251,7 @@ SFTP_rename(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_rename(self->sftp, src, dst);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session);
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -270,7 +270,7 @@ SFTP_mkdir(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_mkdir(self->sftp, path, mode);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session);
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -288,7 +288,7 @@ SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_rmdir(self->sftp, path);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session);
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -309,7 +309,7 @@ SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_symlink_ex(self->sftp, path, path_len, target, target_len, LIBSSH2_SFTP_SYMLINK);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }
@@ -329,7 +329,7 @@ SFTP_readlink(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_symlink_ex(self->sftp, path, path_len, target, sizeof(target), LIBSSH2_SFTP_READLINK);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	if (ret == 0)
 		Py_RETURN_NONE;
@@ -352,7 +352,7 @@ SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_symlink_ex(self->sftp, path, path_len, target, sizeof(target), LIBSSH2_SFTP_REALPATH);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	if (ret == 0)
 		Py_RETURN_NONE;
@@ -376,7 +376,7 @@ SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_stat_ex(self->sftp, path, path_len, type, &attr);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	return get_attrs(&attr);
 }
@@ -424,7 +424,7 @@ SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_setstat(self->sftp, path, &attr);
 	Py_END_ALLOW_THREADS
 
-	HANDLE_SESSION_ERROR(ret < 0, self->session)
+	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
 }

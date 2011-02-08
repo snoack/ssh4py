@@ -37,21 +37,29 @@ typedef int Py_ssize_t;
 
 extern PyObject *SSH2_Error;
 
-#define HANDLE_SESSION_ERROR(cond, session_obj) \
-if (cond) { \
+#define RAISE_SSH2_ERROR(session_obj) \
+{ \
 	char*     _errmsg     = ""; \
 	int       _errmsg_len = 0; \
 	int       _errno; \
 	PyObject* _exc; \
 \
 	_errno = libssh2_session_last_error(session_obj->session, &_errmsg, &_errmsg_len, 0); \
-	_exc   = PyObject_Call(SSH2_Error, Py_BuildValue("(s#)", _errmsg, _errmsg_len), NULL); \
+	_exc   = PyObject_CallFunction(SSH2_Error, "s#", _errmsg, _errmsg_len); \
 \
 	PyObject_SetAttrString(_exc, "errno", Py_BuildValue("i", _errno)); \
 	PyErr_SetObject(SSH2_Error, _exc); \
 \
 	return NULL; \
 }
+
+#define CHECK_RETURN_CODE(ret, session_obj) \
+if (ret < 0) \
+	RAISE_SSH2_ERROR(session_obj)
+
+#define CHECK_RETURN_POINTER(pointer, session_obj) \
+if (pointer == NULL) \
+	RAISE_SSH2_ERROR(session_obj)
 
 #ifdef exception_from_error_queue
 #  undef exception_from_error_queue
