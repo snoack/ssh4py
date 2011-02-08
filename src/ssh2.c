@@ -111,6 +111,8 @@ initlibssh2(void)
 		goto error;
 	if (init_SSH2_SFTP_handle(module) != 0)
 		goto error;
+	if (init_SSH2_Listener(module) != 0)
+		goto error;
 
 #if PY_MAJOR_VERSION >= 3
 	return module;
