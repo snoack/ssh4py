@@ -29,10 +29,11 @@ typedef int Py_ssize_t;
 #define PyBytes_AS_STRING PyString_AS_STRING
 #define _PyBytes_Resize _PyString_Resize
 
-#define PyUnicode_FromString PyString_FromString
-
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
+
+/* Number of bytes allocated when reading a filename via SFTP. */
+#define MAX_FILENAME_LENGHT 1024
 
 extern PyObject *SSH2_Error;
 

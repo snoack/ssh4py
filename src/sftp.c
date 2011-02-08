@@ -34,25 +34,16 @@ SSH2_SFTP_New(LIBSSH2_SFTP *sftp, SSH2_SessionObj *session)
 unsigned long get_flags(char *mode) {
 	unsigned long flags = 0;
 
-	if (strchr(mode, 'a')) {
+	if (strchr(mode, 'a'))
 		flags |= LIBSSH2_FXF_APPEND;
-	}
-
-	if (strchr(mode, 'w')) {
+	if (strchr(mode, 'w'))
 		flags |= LIBSSH2_FXF_WRITE | LIBSSH2_FXF_TRUNC | LIBSSH2_FXF_CREAT;
-	}
-
-	if (strchr(mode, 'r')) {
+	if (strchr(mode, 'r'))
 		flags |= LIBSSH2_FXF_READ;
-	}
-
-	if (strchr(mode, '+')) {
+	if (strchr(mode, '+'))
 		flags |= LIBSSH2_FXF_READ | LIBSSH2_FXF_WRITE;
-	}
-
-	if (strchr(mode, 'x')) {
+	if (strchr(mode, 'x'))
 		flags |= LIBSSH2_FXF_WRITE | LIBSSH2_FXF_TRUNC | LIBSSH2_FXF_EXCL | LIBSSH2_FXF_CREAT;
-	}
 
 	return flags;
 }
@@ -60,17 +51,12 @@ unsigned long get_flags(char *mode) {
 PyObject *
 get_attrs(LIBSSH2_SFTP_ATTRIBUTES *attr)
 {
-	PyObject *attrs=NULL;
-
-	attrs = PyList_New(0);
-	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->filesize));
-	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->uid));
-	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->gid));
-	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->permissions));
-	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->atime));
-	PyList_Append(attrs, PyLong_FromUnsignedLong((unsigned long)attr->mtime));
-
-	return attrs;
+	return Py_BuildValue("(Kkkkkk)", attr->filesize,
+	                                 attr->uid,
+	                                 attr->gid,
+	                                 attr->permissions,
+	                                 attr->atime,
+	                                 attr->mtime);
 }
 
 
@@ -97,76 +83,22 @@ SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	SSH2_SFTP_handleObj *handle;
-	int len=0;
-	int lenmax=255; // unsigned long
-	PyObject *buf;
-	PyObject *list=NULL;
+	char buf[MAX_FILENAME_LENGHT];
+	int len;
 
 	if (!PyArg_ParseTuple(args, "O:read_dir", &handle))
 		return NULL;
 
-	buf = PyBytes_FromStringAndSize(NULL, lenmax);
-    if (buf == NULL) return NULL;
-
 	Py_BEGIN_ALLOW_THREADS
-	len = libssh2_sftp_readdir(handle->sftphandle, PyBytes_AS_STRING(buf), lenmax, &attr);
+	len = libssh2_sftp_readdir(handle->sftphandle, buf, sizeof(buf), &attr);
 	Py_END_ALLOW_THREADS
+
+	HANDLE_SESSION_ERROR(len < 0, self->session)
 
 	if (len == 0)
 		Py_RETURN_NONE;
 
-	HANDLE_SESSION_ERROR(len < 0, self->session)
-
-	if (_PyBytes_Resize(&buf, len) != 0)
-		return NULL;
-
-	list = PyList_New(0);
-	PyList_Append(list, buf);
-	PyList_Append(list, get_attrs(&attr));
-	return list;
-}
-
-static PyObject *
-SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
-{
-	LIBSSH2_SFTP_ATTRIBUTES attr;
-	SSH2_SFTP_handleObj *handle;
-	int len=0;
-	int lenmax=255;
-	PyObject *buf;
-	PyObject *all=NULL;
-	PyObject *list=NULL;
-
-	if (!PyArg_ParseTuple(args, "O:list_dir", &handle))
-		return NULL;
-
-	all = PyList_New(0);
-	while (1) {
-		buf = PyBytes_FromStringAndSize(NULL, lenmax);
-		if (buf == NULL) return NULL;
-
-		Py_BEGIN_ALLOW_THREADS
-		len = libssh2_sftp_readdir(handle->sftphandle, PyBytes_AS_STRING(buf), lenmax, &attr);
-		Py_END_ALLOW_THREADS
-
-		if (len == 0)
-			break;
-
-		HANDLE_SESSION_ERROR(len < 0, self->session)
-
-		if (_PyBytes_Resize(&buf, len) != 0)
-			return NULL;
-
-		list = PyList_New(0);
-		PyList_Append(list, buf);
-		PyList_Append(list, get_attrs(&attr));
-
-
-		PyList_Append(all, list);
-	}
-
-
-	return all;
+	return Py_BuildValue("(s#O)", buf, len, get_attrs(&attr));
 }
 
 static PyObject *
@@ -362,49 +294,19 @@ SFTP_rmdir(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
-{
-	char *path;
-	Py_ssize_t lpath;
-	int ret=0, len=1024;
-	PyObject *target;
-	int type = LIBSSH2_SFTP_REALPATH;
-
-	if (!PyArg_ParseTuple(args, "s#|i:realpath", &path, &lpath, &type))
-		return NULL;
-
-
-	target = PyBytes_FromStringAndSize(NULL, len);
-    if (target == NULL)
-        return NULL;
-
-	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_sftp_symlink_ex(self->sftp, path, lpath, PyBytes_AS_STRING(target), len, type);
-	Py_END_ALLOW_THREADS
-
-	if (ret > 0) {
-		if (_PyBytes_Resize(&target, ret) != 0)
-			return NULL;
-		return target;
-	}
-
-	Py_DECREF(target);
-	Py_RETURN_NONE;
-}
-
-static PyObject *
 SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
 	char *target;
-	int ret=0;
+	Py_ssize_t path_len;
+	Py_ssize_t target_len;
+	int ret;
 
-	if (!PyArg_ParseTuple(args, "ss:symlink", &path, &target))
+	if (!PyArg_ParseTuple(args, "s#s#:symlink", &path, &path_len, &target, &target_len))
 		return NULL;
 
-
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_sftp_symlink(self->sftp, path, target);
+	ret = libssh2_sftp_symlink_ex(self->sftp, path, path_len, target, target_len, LIBSSH2_SFTP_SYMLINK);
 	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
@@ -412,7 +314,51 @@ SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *
+SFTP_readlink(SSH2_SFTPObj *self, PyObject *args)
+{
+	char *path;
+	char target[MAX_FILENAME_LENGHT];
+	Py_ssize_t path_len;
+	int ret;
 
+	if (!PyArg_ParseTuple(args, "s#:readlink", &path, &path_len))
+		return NULL;
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_sftp_symlink_ex(self->sftp, path, path_len, target, sizeof(target), LIBSSH2_SFTP_READLINK);
+	Py_END_ALLOW_THREADS
+
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
+	if (ret == 0)
+		Py_RETURN_NONE;
+
+	return Py_BuildValue("s#", target, ret);
+}
+
+static PyObject *
+SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
+{
+	char *path;
+	char target[MAX_FILENAME_LENGHT];
+	Py_ssize_t path_len;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "s#:realpath", &path, &path_len))
+		return NULL;
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_sftp_symlink_ex(self->sftp, path, path_len, target, sizeof(target), LIBSSH2_SFTP_REALPATH);
+	Py_END_ALLOW_THREADS
+
+	HANDLE_SESSION_ERROR(ret < 0, self->session)
+
+	if (ret == 0)
+		Py_RETURN_NONE;
+
+	return Py_BuildValue("s#", target, ret);
+}
 
 static PyObject *
 SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
@@ -487,7 +433,6 @@ static PyMethodDef SFTP_methods[] =
 {
 	{"open_dir", (PyCFunction)SFTP_open_dir, METH_VARARGS},
 	{"read_dir", (PyCFunction)SFTP_read_dir, METH_VARARGS},
-	{"list_dir", (PyCFunction)SFTP_list_dir, METH_VARARGS},
 	{"open",     (PyCFunction)SFTP_open,     METH_VARARGS},
 	{"shutdown", (PyCFunction)SFTP_shutdown, METH_NOARGS},
 	{"read",     (PyCFunction)SFTP_read,     METH_VARARGS},
@@ -498,8 +443,9 @@ static PyMethodDef SFTP_methods[] =
 	{"rename",   (PyCFunction)SFTP_rename,   METH_VARARGS},
 	{"mkdir",    (PyCFunction)SFTP_mkdir,    METH_VARARGS},
 	{"rmdir",    (PyCFunction)SFTP_rmdir,    METH_VARARGS},
+	{"symlink",  (PyCFunction)SFTP_symlink,  METH_VARARGS},
+	{"readlink", (PyCFunction)SFTP_readlink, METH_VARARGS},
 	{"realpath", (PyCFunction)SFTP_realpath, METH_VARARGS},
-	{"symlinkr", (PyCFunction)SFTP_symlink,  METH_VARARGS},
 	{"get_stat", (PyCFunction)SFTP_get_stat, METH_VARARGS},
 	{"set_stat", (PyCFunction)SFTP_set_stat, METH_VARARGS},
 	{NULL, NULL}

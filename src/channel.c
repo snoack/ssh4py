@@ -161,7 +161,6 @@ static PyObject *
 channel_read(SSH2_ChannelObj *self, PyObject *args)
 {
 	int bufsiz, ret=0, err=0;
-	//~ unsigned char *buf[1024];
 	PyObject *buf;
 
 	if (!PyArg_ParseTuple(args, "i|i:read", &bufsiz, &err))

@@ -115,7 +115,7 @@ session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
 	if ((ret = libssh2_userauth_list(self->session, user, len)) == NULL)
 		Py_RETURN_NONE;
 
-	return PyUnicode_FromString(ret);
+	return Py_BuildValue("s", ret);
 }
 
 static PyObject *
@@ -131,7 +131,7 @@ session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 	hash = libssh2_hostkey_hash(self->session, hashtype);
 	Py_END_ALLOW_THREADS
 
-	return PyUnicode_FromString(hash);
+	return Py_BuildValue("s", hash);
 }
 
 static PyObject *
@@ -179,15 +179,15 @@ static PyObject *
 session_get_methods(SSH2_SessionObj *self, PyObject *args)
 {
 	int method_type;
-	const char *methods;
+	const char *ret;
 
 	if (!PyArg_ParseTuple(args, "i:get_method", &method_type))
 		return NULL;
 
-	if ((methods = libssh2_session_methods(self->session, method_type)) == NULL)
+	if ((ret = libssh2_session_methods(self->session, method_type)) == NULL)
 		Py_RETURN_NONE;
 
-	return PyUnicode_FromString(methods);
+	return Py_BuildValue("s", ret);
 }
 
 static PyObject *
