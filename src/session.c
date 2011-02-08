@@ -4,7 +4,6 @@
  * Copyright (C) Keyphrene.com 2005, All rights reserved
  *
  */
-#include <Python.h>
 #define SSH2_MODULE
 #include "ssh2.h"
 
@@ -108,7 +107,7 @@ session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
 {
 	char *user;
 	char *ret;
-	int len=0;
+	Py_ssize_t len;
 
 	if (!PyArg_ParseTuple(args, "s#:get_authentication_methods", &user, &len))
 		return NULL;
@@ -138,8 +137,8 @@ session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 static PyObject *
 session_set_password(SSH2_SessionObj *self, PyObject *args)
 {
-	unsigned char *login;
-	unsigned char *pwd;
+	char *login;
+	char *pwd;
 	int ret;
 
 	if (!PyArg_ParseTuple(args, "ss:set_password", &login, &pwd))
@@ -208,7 +207,7 @@ session_set_method(SSH2_SessionObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static int global_callback() {
+static int global_callback(void) {
 	return 1;
 }
 

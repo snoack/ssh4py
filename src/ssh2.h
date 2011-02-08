@@ -9,6 +9,8 @@
 #ifndef PyOpenSSL_SSH2_H_
 #define PyOpenSSL_SSH2_H_
 
+#define PY_SSIZE_T_CLEAN
+
 #include <Python.h>
 #include <libssh2.h>
 #include <libssh2_sftp.h>
@@ -17,6 +19,10 @@
 #include "sftp.h"
 #include "sftphandle.h"
 #include "listener.h"
+
+#if PY_VERSION_HEX < 0x02050000
+typedef int Py_ssize_t;
+#endif
 
 #if PY_VERSION_HEX < 0x02060000
 #define PyBytes_FromStringAndSize PyString_FromStringAndSize

@@ -4,7 +4,6 @@
  * Copyright (C) Keyphrene.com 2005, All rights reserved
  *
  */
-#include <Python.h>
 #define SSH2_MODULE
 #include "ssh2.h"
 
@@ -48,7 +47,7 @@ SFTP_handle_close(SSH2_SFTP_handleObj *self)
 
 static PyMethodDef SFTP_handle_methods[] =
 {
-	{"close", SFTP_handle_close, METH_NOARGS},
+	{"close", (PyCFunction)SFTP_handle_close, METH_NOARGS},
     {NULL, NULL}
 };
 

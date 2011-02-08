@@ -4,7 +4,6 @@
  * Copyright (C) Keyphrene.com 2005, All rights reserved
  *
  */
-#include <Python.h>
 #define SSH2_MODULE
 #include "ssh2.h"
 
@@ -236,7 +235,8 @@ static PyObject *
 SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *msg;
-	int len, ret=0;
+	Py_ssize_t len;
+	Py_ssize_t ret;
 	SSH2_SFTP_handleObj *handle;
 
 #if PY_MAJOR_VERSION >= 3
@@ -252,13 +252,13 @@ SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return Py_BuildValue("i", ret);
+	return Py_BuildValue("n", ret);
 }
 
 static PyObject *
 SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 {
-	int ret;
+	Py_ssize_t ret;
 	SSH2_SFTP_handleObj *handle;
 
 	if (!PyArg_ParseTuple(args, "O:tell", &handle))
@@ -268,7 +268,7 @@ SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_tell(handle->sftphandle);
 	Py_END_ALLOW_THREADS
 
-	return Py_BuildValue("i", ret);
+	return Py_BuildValue("n", ret);
 }
 
 static PyObject *
@@ -365,7 +365,8 @@ static PyObject *
 SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 {
 	char *path;
-	int lpath=0, ret=0, len=1024;
+	Py_ssize_t lpath;
+	int ret=0, len=1024;
 	PyObject *target;
 	int type = LIBSSH2_SFTP_REALPATH;
 
@@ -416,17 +417,17 @@ SFTP_symlink(SSH2_SFTPObj *self, PyObject *args)
 static PyObject *
 SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 {
-	unsigned char *path;
-	LIBSSH2_SFTP_ATTRIBUTES attr;
-	int ret;
-	int lpath = 0;
+	char *path;
+	Py_ssize_t path_len;
 	int type = LIBSSH2_SFTP_STAT;
+	int ret;
+	LIBSSH2_SFTP_ATTRIBUTES attr;
 
-	if (!PyArg_ParseTuple(args, "s#|i:get_stat", &path, &lpath, &type))
+	if (!PyArg_ParseTuple(args, "s#|i:get_stat", &path, &path_len, &type))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_sftp_stat_ex(self->sftp, path, lpath, type, &attr);
+	ret = libssh2_sftp_stat_ex(self->sftp, path, path_len, type, &attr);
 	Py_END_ALLOW_THREADS
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)

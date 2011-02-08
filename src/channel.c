@@ -4,7 +4,6 @@
  * Copyright (C) Keyphrene.com 2005, All rights reserved
  *
  */
-#include <Python.h>
 #define SSH2_MODULE
 #include "ssh2.h"
 
@@ -49,15 +48,15 @@ channel_close(SSH2_ChannelObj *self)
 static PyObject *
 channel_pty(SSH2_ChannelObj *self, PyObject *args)
 {
-	int ret, lt;
 	char *term;
 	char *modes = NULL;
-	int lm = 0;
+	Py_ssize_t lt;
+	Py_ssize_t lm = 0;
+	int ret;
 	int w = 80;
 	int h = 24;
 	int pw = 0;
 	int ph = 0;
-
 
 	if (!PyArg_ParseTuple(args, "s#|s#iiii:pty", &term, &lt, &modes, &lm, &w, &h, &pw, &ph))
 		return NULL;
@@ -195,9 +194,9 @@ channel_read(SSH2_ChannelObj *self, PyObject *args)
 static PyObject *
 channel_write(SSH2_ChannelObj *self, PyObject *args)
 {
-	unsigned char *msg;
-	int len;
-	int ret;
+	char *msg;
+	Py_ssize_t len;
+	Py_ssize_t ret;
 
 #if PY_MAJOR_VERSION >= 3
 	if (!PyArg_ParseTuple(args, "y#:write", &msg, &len))
@@ -212,7 +211,7 @@ channel_write(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return Py_BuildValue("i", ret);
+	return Py_BuildValue("n", ret);
 }
 
 static PyObject *

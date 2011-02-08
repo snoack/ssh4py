@@ -4,7 +4,6 @@
  * Copyright (C) Keyphrene.com 2005, All rights reserved
  *
  */
-#include <Python.h>
 #define SSH2_MODULE
 #include "ssh2.h"
 
