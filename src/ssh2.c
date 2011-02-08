@@ -8,9 +8,6 @@
 #define SSH2_MODULE
 #include "ssh2.h"
 
-static char SSH2_doc[] = "\n\
-";
-
 
 PyObject *SSH2_Error;
 
@@ -87,24 +84,47 @@ static PyMethodDef SSH2_methods[] = {
     {NULL, NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+struct PyModuleDef SSH2_moduledef = {
+	PyModuleDef_HEAD_INIT,
+	"libssh2",
+	NULL,
+	-1,
+	SSH2_methods,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+#endif
+
 /*
  * Initialize ssh sub module
  *
  * Arguments: None
  * Returns:   None
  */
-void
+PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit_libssh2(void)
+#else
 initlibssh2(void)
+#endif
 {
     static void *SSH2_API[SSH2_API_pointers];
     PyObject *c_api_object;
-    PyObject *module, *dict;
+    PyObject *module;
 
     //~ ERR_load_SSH2_strings();
     //~ OpenSSL_add_all_algorithms();
 
-    if ((module = Py_InitModule3("libssh2", SSH2_methods, SSH2_doc)) == NULL)
-        return;
+#if PY_MAJOR_VERSION >= 3
+	if ((module = PyModule_Create(&SSH2_moduledef)) == NULL)
+		return NULL;
+#else
+	if ((module = Py_InitModule("libssh2", SSH2_methods)) == NULL)
+		return;
+#endif
 
     /* Initialize the C API pointer array */
     SSH2_API[SSH2_Session_New_NUM]      = (void *)SSH2_Session_New;
@@ -157,16 +177,25 @@ initlibssh2(void)
     PyModule_AddIntConstant(module, "CALLBACK_MACERROR",  LIBSSH2_CALLBACK_MACERROR);
     PyModule_AddIntConstant(module, "CALLBACK_X11",  LIBSSH2_CALLBACK_X11);
 
-    dict = PyModule_GetDict(module);
-    if (!init_SSH2_Session(dict))
-        goto error;
-	if (!init_SSH2_Channel(dict))
-        goto error;
-	if (!init_SSH2_SFTP(dict))
-        goto error;
-	if (!init_SSH2_SFTP_handle(dict))
-        goto error;
+	if (init_SSH2_Session(module) != 0)
+		goto error;
+	if (init_SSH2_Channel(module) != 0)
+		goto error;
+	if (init_SSH2_SFTP(module) != 0)
+		goto error;
+	if (init_SSH2_SFTP_handle(module) != 0)
+		goto error;
+
+#if PY_MAJOR_VERSION >= 3
+	return module;
+#else
+	return;
+#endif
+
 error:
-    ;
+	Py_DECREF(module);
+#if PY_MAJOR_VERSION >= 3
+	return NULL;
+#endif
 }
 

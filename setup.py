@@ -21,8 +21,3 @@ setup(name='libssh2-python',
       author_email='sebastian.noack@gmail.com',
       url='http://www.libssh2.org/',
       license='LGPL')
-
-if sys.argv[1] == 'build':
-	f = open('./MANIFEST.in', 'wb')
-	f.write('recursive-include src *.c* *.h\r\n')
-	f.close()

@@ -82,11 +82,11 @@ SSH2_SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O:read_dir", &handle))
 		return NULL;
 
-	buf = PyString_FromStringAndSize(NULL, lenmax);
+	buf = PyBytes_FromStringAndSize(NULL, lenmax);
     if (buf == NULL) return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
+	len = libssh2_sftp_readdir(handle->sftphandle, PyBytes_AS_STRING(buf), lenmax, &attr);
 	Py_END_ALLOW_THREADS
 
 	if (len == 0)
@@ -94,7 +94,7 @@ SSH2_SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(len < 0, self->session)
 
-	if (len != lenmax && _PyString_Resize(&buf, len) < 0)
+	if (_PyBytes_Resize(&buf, len) != 0)
 		return NULL;
 
 	list = PyList_New(0);
@@ -119,11 +119,11 @@ SSH2_SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
 
 	all = PyList_New(0);
 	while (1) {
-		buf = PyString_FromStringAndSize(NULL, lenmax);
+		buf = PyBytes_FromStringAndSize(NULL, lenmax);
 		if (buf == NULL) return NULL;
 
 		Py_BEGIN_ALLOW_THREADS
-		len = libssh2_sftp_readdir(handle->sftphandle, PyString_AsString(buf), lenmax, &attr);
+		len = libssh2_sftp_readdir(handle->sftphandle, PyBytes_AS_STRING(buf), lenmax, &attr);
 		Py_END_ALLOW_THREADS
 
 		if (len == 0)
@@ -131,7 +131,7 @@ SSH2_SFTP_list_dir(SSH2_SFTPObj *self, PyObject *args)
 
 		HANDLE_SESSION_ERROR(len < 0, self->session)
 
-		if (len != lenmax && _PyString_Resize(&buf, len) < 0)
+		if (_PyBytes_Resize(&buf, len) != 0)
 			return NULL;
 
 		list = PyList_New(0);
@@ -190,18 +190,17 @@ SSH2_SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oi:read", &handle, &bufsiz))
 		return NULL;
 
-	buf = PyString_FromStringAndSize(NULL, bufsiz);
+	buf = PyBytes_FromStringAndSize(NULL, bufsiz);
     if (buf == NULL)
         return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_sftp_read(handle->sftphandle, PyString_AsString(buf), bufsiz);
+	ret = libssh2_sftp_read(handle->sftphandle, PyBytes_AS_STRING(buf), bufsiz);
 	Py_END_ALLOW_THREADS
 
 	if (ret > 0) {
-		if (ret != bufsiz && _PyString_Resize(&buf, ret) < 0) {
+		if (_PyBytes_Resize(&buf, ret) != 0)
 			return NULL;
-		}
 		return buf;
 	}
 
@@ -216,7 +215,11 @@ SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 	int len, ret=0;
 	SSH2_SFTP_handleObj *handle;
 
+#if PY_MAJOR_VERSION >= 3
+	if (!PyArg_ParseTuple(args, "Oy#:write", &handle, &msg, &len))
+#else
 	if (!PyArg_ParseTuple(args, "Os#:write", &handle, &msg, &len))
+#endif
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -225,7 +228,7 @@ SSH2_SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(ret);
+	return Py_BuildValue("i", ret);
 }
 
 static PyObject *
@@ -241,7 +244,7 @@ SSH2_SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_tell(handle->sftphandle);
 	Py_END_ALLOW_THREADS
 
-	return PyInt_FromLong(ret);
+	return Py_BuildValue("i", ret);
 }
 
 static PyObject *
@@ -346,18 +349,17 @@ SSH2_SFTP_realpath(SSH2_SFTPObj *self, PyObject *args)
 		return NULL;
 
 
-	target = PyString_FromStringAndSize(NULL, len);
+	target = PyBytes_FromStringAndSize(NULL, len);
     if (target == NULL)
         return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_sftp_symlink_ex(self->sftp, path, lpath, PyString_AsString(target), len, type);
+	ret = libssh2_sftp_symlink_ex(self->sftp, path, lpath, PyBytes_AS_STRING(target), len, type);
 	Py_END_ALLOW_THREADS
 
 	if (ret > 0) {
-		if (ret != len && _PyString_Resize(&target, ret) < 0) {
+		if (_PyBytes_Resize(&target, ret) != 0)
 			return NULL;
-		}
 		return target;
 	}
 
@@ -415,8 +417,6 @@ SSH2_SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
 	LIBSSH2_SFTP_ATTRIBUTES attr;
 	PyObject *attrs;
 	int ret;
-
-	//~ printf("%s\n", PyString_AsString(PyObject_Str(args)));
 
 	if (!PyArg_ParseTuple(args, "sO:set_stat", &path, &attrs))
 		return NULL;
@@ -518,50 +518,64 @@ SSH2_SFTP_dealloc(SSH2_SFTPObj *self)
     PyObject_Del(self);
 }
 
-/*
- * Find attribute
- *
- * Arguments: self - The SFTP object
- *            name - The attribute name
- * Returns:   A Python object for the attribute, or NULL if something went
- *            wrong
- */
-static PyObject *
-SSH2_SFTP_getattr(SSH2_SFTPObj *self, char *name)
-{
-    return Py_FindMethod(SSH2_SFTP_methods, (PyObject *)self, name);
-}
-
 PyTypeObject SSH2_SFTP_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "SFTP",
-    sizeof(SSH2_SFTPObj),
-    0,
-    (destructor)SSH2_SFTP_dealloc,
-    NULL, /* print */
-    (getattrfunc)SSH2_SFTP_getattr,
-	NULL, /* setattr */
-    NULL, /* compare */
-    NULL, /* repr */
-    NULL, /* as_number */
-    NULL, /* as_sequence */
-    NULL, /* as_mapping */
-    NULL, /* hash */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	"SFTP",                        /* tp_name */
+	sizeof(SSH2_SFTPObj),          /* tp_basicsize */
+	0,                             /* tp_itemsize */
+	(destructor)SSH2_SFTP_dealloc, /* tp_dealloc */
+	0,                             /* tp_print */
+	0,                             /* tp_getattr */
+	0,                             /* tp_setattr */
+	0,                             /* tp_compare */
+	0,                             /* tp_repr */
+	0,                             /* tp_as_number */
+	0,                             /* tp_as_sequence */
+	0,                             /* tp_as_mapping */
+	0,                             /* tp_hash  */
+	0,                             /* tp_call */
+	0,                             /* tp_str */
+	0,                             /* tp_getattro */
+	0,                             /* tp_setattro */
+	0,                             /* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT,            /* tp_flags */
+	0,                             /* tp_doc */
+	0,                             /* tp_traverse */
+	0,                             /* tp_clear */
+	0,                             /* tp_richcompare */
+	0,                             /* tp_weaklistoffset */
+	0,                             /* tp_iter */
+	0,                             /* tp_iternext */
+	SSH2_SFTP_methods,             /* tp_methods */
+	0,                             /* tp_members */
+	0,                             /* tp_getset */
+	0,                             /* tp_base */
+	0,                             /* tp_dict */
+	0,                             /* tp_descr_get */
+	0,                             /* tp_descr_set */
+	0,                             /* tp_dictoffset */
+	0,                             /* tp_init */
+	0,                             /* tp_alloc */
+	0,                             /* tp_new */
 };
 
 /*
  * Initialize the SFTP
  *
- * Arguments: dict - The SSH2 module dictionary
+ * Arguments: module - The SSH2 module
  * Returns:   None
  */
 int
-init_SSH2_SFTP(PyObject *dict)
+init_SSH2_SFTP(PyObject *module)
 {
-    SSH2_SFTP_Type.ob_type = &PyType_Type;
-    Py_INCREF(&SSH2_SFTP_Type);
-    PyDict_SetItemString(dict, "SFTPType", (PyObject *)&SSH2_SFTP_Type);
-    return 1;
+	if (PyType_Ready(&SSH2_SFTP_Type) != 0)
+		return -1;
+
+	Py_INCREF(&SSH2_SFTP_Type);
+	if (PyModule_AddObject(module, "SFTPType", (PyObject *)&SSH2_SFTP_Type) == 0)
+		return 0;
+
+	Py_DECREF(&SSH2_SFTP_Type);
+	return -1;
 }
 

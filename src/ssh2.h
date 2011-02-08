@@ -18,6 +18,15 @@
 #include "sftphandle.h"
 #include "listener.h"
 
+#if PY_VERSION_HEX < 0x02060000
+#define PyBytes_FromStringAndSize PyString_FromStringAndSize
+#define PyBytes_AS_STRING PyString_AS_STRING
+#define _PyBytes_Resize _PyString_Resize
+
+#define PyUnicode_FromString PyString_FromString
+
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
 
 extern PyObject *SSH2_Error;
 
@@ -31,7 +40,7 @@ if (cond) { \
 	_errno = libssh2_session_last_error(session_obj->session, &_errmsg, &_errmsg_len, 0); \
 	_exc   = PyObject_Call(SSH2_Error, Py_BuildValue("(s#)", _errmsg, _errmsg_len), NULL); \
 \
-	PyObject_SetAttrString(_exc, "errno", PyInt_FromLong(_errno)); \
+	PyObject_SetAttrString(_exc, "errno", Py_BuildValue("i", _errno)); \
 	PyErr_SetObject(SSH2_Error, _exc); \
 \
 	return NULL; \

@@ -145,24 +145,22 @@ SSH2_Channel_read(SSH2_ChannelObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i|i:read", &bufsiz, &err))
 		return NULL;
 
-	buf = PyString_FromStringAndSize(NULL, bufsiz);
-    if (buf == NULL)
-        return NULL;
+	if ((buf = PyBytes_FromStringAndSize(NULL, bufsiz)) == NULL)
+		return NULL;
 
 	if (libssh2_channel_eof(self->channel)!=1) {
 
 		Py_BEGIN_ALLOW_THREADS
 		if (err == 1) {
-			ret = libssh2_channel_read_stderr(self->channel, PyString_AsString(buf), bufsiz);
+			ret = libssh2_channel_read_stderr(self->channel, PyBytes_AS_STRING(buf), bufsiz);
 		} else {
-			ret = libssh2_channel_read(self->channel, PyString_AsString(buf), bufsiz);
+			ret = libssh2_channel_read(self->channel, PyBytes_AS_STRING(buf), bufsiz);
 		}
 		Py_END_ALLOW_THREADS
 
 		if (ret > 0) {
-			if (ret != bufsiz && _PyString_Resize(&buf, ret) < 0) {
+			if (_PyBytes_Resize(&buf, ret) != 0)
 				return NULL;
-			}
 			return buf;
 		}
 	}
@@ -176,9 +174,13 @@ SSH2_Channel_write(SSH2_ChannelObj *self, PyObject *args)
 {
 	unsigned char *msg;
 	int len;
-	int ret=0;
+	int ret;
 
+#if PY_MAJOR_VERSION >= 3
+	if (!PyArg_ParseTuple(args, "y#:write", &msg, &len))
+#else
 	if (!PyArg_ParseTuple(args, "s#:write", &msg, &len))
+#endif
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -187,7 +189,7 @@ SSH2_Channel_write(SSH2_ChannelObj *self, PyObject *args)
 
 	HANDLE_SESSION_ERROR(ret < 0, self->session)
 
-	return PyInt_FromLong(ret);
+	return Py_BuildValue("i", ret);
 }
 
 static PyObject *
@@ -227,7 +229,7 @@ SSH2_Channel_send_eof(SSH2_ChannelObj *self)
 static PyObject *
 SSH2_Channel_window_adjust(SSH2_ChannelObj *self, PyObject *args)
 {
-	unsigned long ret=0;
+	unsigned long ret;
 	unsigned long adjustment;
 	unsigned char force;
 
@@ -238,7 +240,7 @@ SSH2_Channel_window_adjust(SSH2_ChannelObj *self, PyObject *args)
 	ret = libssh2_channel_receive_window_adjust(self->channel, adjustment, force);
 	Py_END_ALLOW_THREADS
 
-	return PyInt_FromLong(ret);
+	return Py_BuildValue("k", ret);
 }
 
 static PyObject *
@@ -247,18 +249,12 @@ SSH2_Channel_window_read(SSH2_ChannelObj *self)
 	unsigned long ret=0;
 	unsigned long read_avail;
 	unsigned long window_size_initial;
-	PyObject *_ret;
 
 	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_window_read_ex(self->channel, &read_avail, &window_size_initial);
 	Py_END_ALLOW_THREADS
 
-	_ret = PyTuple_New(3);
-	PyTuple_SetItem(_ret, 0, PyInt_FromLong(ret));
-	PyTuple_SetItem(_ret, 1, PyInt_FromLong(read_avail));
-	PyTuple_SetItem(_ret, 2, PyInt_FromLong(window_size_initial));
-
-	return _ret;
+	return Py_BuildValue("(kkk)", ret, read_avail, window_size_initial);
 }
 
 static PyObject *
@@ -266,17 +262,12 @@ SSH2_Channel_window_write(SSH2_ChannelObj *self)
 {
 	unsigned long ret=0;
 	unsigned long window_size_initial;
-	PyObject *_ret;
 
 	Py_BEGIN_ALLOW_THREADS
 	ret = libssh2_channel_window_write_ex(self->channel, &window_size_initial);
 	Py_END_ALLOW_THREADS
 
-	_ret = PyTuple_New(2);
-	PyTuple_SetItem(_ret, 0, PyInt_FromLong(ret));
-	PyTuple_SetItem(_ret, 1, PyInt_FromLong(window_size_initial));
-
-	return _ret;
+	return Py_BuildValue("(kk)", ret, window_size_initial);
 }
 
 static PyObject *
@@ -288,7 +279,7 @@ SSH2_Channel_get_exit_status(SSH2_ChannelObj *self)
 	ret = libssh2_channel_get_exit_status(self->channel);
 	Py_END_ALLOW_THREADS
 
-	return PyInt_FromLong(ret);
+	return Py_BuildValue("i", ret);
 }
 
 static PyObject *
@@ -383,50 +374,64 @@ SSH2_Channel_dealloc(SSH2_ChannelObj *self)
     PyObject_Del(self);
 }
 
-/*
- * Find attribute
- *
- * Arguments: self - The Channel object
- *            name - The attribute name
- * Returns:   A Python object for the attribute, or NULL if something went
- *            wrong
- */
-static PyObject *
-SSH2_Channel_getattr(SSH2_ChannelObj *self, char *name)
-{
-    return Py_FindMethod(SSH2_Channel_methods, (PyObject *)self, name);
-}
-
 PyTypeObject SSH2_Channel_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "Channel",
-    sizeof(SSH2_ChannelObj),
-    0,
-    (destructor)SSH2_Channel_dealloc,
-    NULL, /* print */
-    (getattrfunc)SSH2_Channel_getattr,
-	NULL, /* setattr */
-    NULL, /* compare */
-    NULL, /* repr */
-    NULL, /* as_number */
-    NULL, /* as_sequence */
-    NULL, /* as_mapping */
-    NULL, /* hash */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	"Channel",                        /* tp_name */
+	sizeof(SSH2_ChannelObj),          /* tp_basicsize */
+	0,                                /* tp_itemsize */
+	(destructor)SSH2_Channel_dealloc, /* tp_dealloc */
+	0,                                /* tp_print */
+	0,                                /* tp_getattr */
+	0,                                /* tp_setattr */
+	0,                                /* tp_compare */
+	0,                                /* tp_repr */
+	0,                                /* tp_as_number */
+	0,                                /* tp_as_sequence */
+	0,                                /* tp_as_mapping */
+	0,                                /* tp_hash  */
+	0,                                /* tp_call */
+	0,                                /* tp_str */
+	0,                                /* tp_getattro */
+	0,                                /* tp_setattro */
+	0,                                /* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT,               /* tp_flags */
+	0,                                /* tp_doc */
+	0,                                /* tp_traverse */
+	0,                                /* tp_clear */
+	0,                                /* tp_richcompare */
+	0,                                /* tp_weaklistoffset */
+	0,                                /* tp_iter */
+	0,                                /* tp_iternext */
+	SSH2_Channel_methods,             /* tp_methods */
+	0,                                /* tp_members */
+	0,                                /* tp_getset */
+	0,                                /* tp_base */
+	0,                                /* tp_dict */
+	0,                                /* tp_descr_get */
+	0,                                /* tp_descr_set */
+	0,                                /* tp_dictoffset */
+	0,                                /* tp_init */
+	0,                                /* tp_alloc */
+	0,                                /* tp_new */
 };
 
 /*
  * Initialize the Channel
  *
- * Arguments: dict - The SSH2 module dictionary
+ * Arguments: module - The SSH2 module
  * Returns:   None
  */
 int
-init_SSH2_Channel(PyObject *dict)
+init_SSH2_Channel(PyObject *module)
 {
-    SSH2_Channel_Type.ob_type = &PyType_Type;
-    Py_INCREF(&SSH2_Channel_Type);
-    PyDict_SetItemString(dict, "ChannelType", (PyObject *)&SSH2_Channel_Type);
-    return 1;
+	if (PyType_Ready(&SSH2_Channel_Type) != 0)
+		return -1;
+
+	Py_INCREF(&SSH2_Channel_Type);
+	if (PyModule_AddObject(module, "ChannelType", (PyObject *)&SSH2_Channel_Type) == 0)
+		return 0;
+
+	Py_DECREF(&SSH2_Channel_Type);
+	return -1;
 }
 
