@@ -113,10 +113,9 @@ session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s#:get_authentication_methods", &user, &len))
 		return NULL;
 
-	ret = libssh2_userauth_list(self->session, user, len);
-	if (ret == NULL) {
+	if ((ret = libssh2_userauth_list(self->session, user, len)) == NULL)
 		Py_RETURN_NONE;
-	}
+
 	return PyUnicode_FromString(ret);
 }
 
@@ -178,35 +177,18 @@ session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 
 
 static PyObject *
-session_get_methods(SSH2_SessionObj *self)
+session_get_methods(SSH2_SessionObj *self, PyObject *args)
 {
-	const char *kex, *hostkey, *crypt_cs, *crypt_sc, *mac_cs, *mac_sc, *comp_cs, *comp_sc, *lang_cs, *lang_sc;
-	PyObject *methods;
+	int method_type;
+	const char *methods;
 
-	kex = libssh2_session_methods(self->session, LIBSSH2_METHOD_KEX);
-	hostkey = libssh2_session_methods(self->session, LIBSSH2_METHOD_HOSTKEY);
-	crypt_cs = libssh2_session_methods(self->session, LIBSSH2_METHOD_CRYPT_CS);
-	crypt_sc = libssh2_session_methods(self->session, LIBSSH2_METHOD_CRYPT_SC);
-	mac_cs = libssh2_session_methods(self->session, LIBSSH2_METHOD_MAC_CS);
-	mac_sc = libssh2_session_methods(self->session, LIBSSH2_METHOD_MAC_SC);
-	comp_cs = libssh2_session_methods(self->session, LIBSSH2_METHOD_COMP_CS);
-	comp_sc = libssh2_session_methods(self->session, LIBSSH2_METHOD_COMP_SC);
-	lang_cs = libssh2_session_methods(self->session, LIBSSH2_METHOD_LANG_CS);
-	lang_sc = libssh2_session_methods(self->session, LIBSSH2_METHOD_LANG_SC);
+	if (!PyArg_ParseTuple(args, "i:get_method", &method_type))
+		return NULL;
 
-	methods = PyDict_New();
-	PyDict_SetItemString(methods, "KEX", PyUnicode_FromString(kex));
-	PyDict_SetItemString(methods, "HOSTKEY", PyUnicode_FromString(hostkey));
-	PyDict_SetItemString(methods, "CRYPT_CS", PyUnicode_FromString(crypt_cs));
-	PyDict_SetItemString(methods, "CRYPT_SC", PyUnicode_FromString(crypt_sc));
-	PyDict_SetItemString(methods, "MAC_CS", PyUnicode_FromString(mac_cs));
-	PyDict_SetItemString(methods, "MAC_SC", PyUnicode_FromString(mac_sc));
-	PyDict_SetItemString(methods, "COMP_CS", PyUnicode_FromString(comp_cs));
-	PyDict_SetItemString(methods, "COMP_SC", PyUnicode_FromString(comp_sc));
-	PyDict_SetItemString(methods, "LANG_CS", PyUnicode_FromString(lang_cs));
-	PyDict_SetItemString(methods, "LANG_SC", PyUnicode_FromString(lang_sc));
+	if ((methods = libssh2_session_methods(self->session, method_type)) == NULL)
+		Py_RETURN_NONE;
 
-	return methods;
+	return PyUnicode_FromString(methods);
 }
 
 static PyObject *
@@ -397,7 +379,7 @@ static PyMethodDef session_methods[] =
 	{"get_fingerprint",            (PyCFunction)session_get_fingerprint,            METH_VARARGS},
 	{"set_password",               (PyCFunction)session_set_password,               METH_VARARGS},
 	{"set_public_key",             (PyCFunction)session_set_public_key,             METH_VARARGS},
-	{"get_methods",                (PyCFunction)session_get_methods,                METH_NOARGS},
+	{"get_methods",                (PyCFunction)session_get_methods,                METH_VARARGS},
 	{"set_method",                 (PyCFunction)session_set_method,                 METH_VARARGS},
 	{"set_callback",               (PyCFunction)session_set_callback,               METH_VARARGS},
 	{"get_blocking",               (PyCFunction)session_get_blocking,               METH_NOARGS},

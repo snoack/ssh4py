@@ -87,6 +87,8 @@ initlibssh2(void)
 	PyModule_AddIntConstant(module, "METHOD_MAC_SC",   LIBSSH2_METHOD_MAC_SC);
 	PyModule_AddIntConstant(module, "METHOD_COMP_CS",  LIBSSH2_METHOD_COMP_CS);
 	PyModule_AddIntConstant(module, "METHOD_COMP_SC",  LIBSSH2_METHOD_COMP_SC);
+	PyModule_AddIntConstant(module, "METHOD_LANG_CS",  LIBSSH2_METHOD_LANG_CS);
+	PyModule_AddIntConstant(module, "METHOD_LANG_SC",  LIBSSH2_METHOD_LANG_SC);
 
 	PyModule_AddIntConstant(module, "SFTP_SYMLINK",   LIBSSH2_SFTP_SYMLINK);
 	PyModule_AddIntConstant(module, "SFTP_READLINK",  LIBSSH2_SFTP_READLINK);
