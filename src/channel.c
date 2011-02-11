@@ -91,6 +91,30 @@ channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
 }
 
 static PyObject *
+channel_x11_req(SSH2_ChannelObj *self, PyObject *args, PyObject *kwds)
+{
+	int screen_number;
+	int single_connection = 0;
+	int ret;
+	char *auth_proto = NULL;
+	char *auth_cookie = NULL;
+	static char *kwlist[] = {"screen_number", "single_connection", "auth_proto", "auth_cookie", NULL};
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|iss", kwlist,
+	                                 &screen_number, &single_connection,
+	                                 &auth_proto, &auth_cookie))
+		return NULL;
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_channel_x11_req_ex(self->channel, single_connection, auth_proto, auth_cookie, screen_number);
+	Py_END_ALLOW_THREADS
+
+	CHECK_RETURN_CODE(ret, self->session)
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *
 channel_shell(SSH2_ChannelObj *self)
 {
 	int ret;
@@ -334,6 +358,7 @@ static PyMethodDef channel_methods[] =
 	{"close",           (PyCFunction)channel_close,           METH_NOARGS},
 	{"pty",             (PyCFunction)channel_pty,             METH_VARARGS},
 	{"pty_size",        (PyCFunction)channel_pty_size,        METH_VARARGS},
+	{"x11_req",         (PyCFunction)channel_x11_req,         METH_VARARGS | METH_KEYWORDS},
 	{"shell",           (PyCFunction)channel_shell,           METH_NOARGS},
 	{"execute",         (PyCFunction)channel_execute,         METH_VARARGS},
 	{"set_env",         (PyCFunction)channel_set_env,         METH_VARARGS},
