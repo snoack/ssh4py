@@ -86,7 +86,7 @@ SFTP_read_dir(SSH2_SFTPObj *self, PyObject *args)
 	char buf[MAX_FILENAME_LENGHT];
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "O:read_dir", &handle))
+	if (!PyArg_ParseTuple(args, "O!:read_dir", &SSH2_SFTP_handle_Type, &handle))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -143,7 +143,7 @@ SFTP_read(SSH2_SFTPObj *self, PyObject *args)
 	PyObject *buf;
 	SSH2_SFTP_handleObj *handle;
 
-	if (!PyArg_ParseTuple(args, "Oi:read", &handle, &bufsiz))
+	if (!PyArg_ParseTuple(args, "O!i:read", &SSH2_SFTP_handle_Type, &handle, &bufsiz))
 		return NULL;
 
 	if (bufsiz < 0) {
@@ -178,9 +178,9 @@ SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 	SSH2_SFTP_handleObj *handle;
 
 #if PY_MAJOR_VERSION >= 3
-	if (!PyArg_ParseTuple(args, "Oy#:write", &handle, &msg, &len))
+	if (!PyArg_ParseTuple(args, "O!y#:write", &SSH2_SFTP_handle_Type, &handle, &msg, &len))
 #else
-	if (!PyArg_ParseTuple(args, "Os#:write", &handle, &msg, &len))
+	if (!PyArg_ParseTuple(args, "O!s#:write", &SSH2_SFTP_handle_Type, &handle, &msg, &len))
 #endif
 		return NULL;
 
@@ -199,7 +199,7 @@ SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 	Py_ssize_t ret;
 	SSH2_SFTP_handleObj *handle;
 
-	if (!PyArg_ParseTuple(args, "O:tell", &handle))
+	if (!PyArg_ParseTuple(args, "O!:tell", &SSH2_SFTP_handle_Type, &handle))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -215,7 +215,7 @@ SFTP_seek(SSH2_SFTPObj *self, PyObject *args)
 	SSH2_SFTP_handleObj *handle;
 	unsigned long offset=0;
 
-	if (!PyArg_ParseTuple(args, "Ok:seek", &handle, &offset))
+	if (!PyArg_ParseTuple(args, "O!k:seek", &SSH2_SFTP_handle_Type, &handle, &offset))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -388,42 +388,91 @@ SFTP_get_stat(SSH2_SFTPObj *self, PyObject *args)
 }
 
 static PyObject *
-SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args)
+SFTP_set_stat(SSH2_SFTPObj *self, PyObject *args, PyObject *kwds)
 {
 	char *path;
+	char has_uid = 0;
+	char has_gid = 0;
+	char has_atime = 0;
+	char has_mtime = 0;
+	Py_ssize_t pos = 0;
+	PyObject *key;
+	PyObject *val;
 	LIBSSH2_SFTP_ATTRIBUTES attr;
-	PyObject *attrs;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "sO:set_stat", &path, &attrs))
+	if (!PyArg_ParseTuple(args, "s:set_stat", &path))
 		return NULL;
 
-	attr.flags = 0;
-	if (PyMapping_HasKeyString(attrs, "perms")) {
-		attr.flags |= LIBSSH2_SFTP_ATTR_PERMISSIONS;
-		attr.permissions = PyLong_AsLong(PyDict_GetItemString(attrs, "perms"));
+	while (PyDict_Next(kwds, &pos, &key, &val)) {
+		char *s;
+		unsigned long *field;
+
+#if PY_MAJOR_VERSION < 3
+		if (!PyString_Check(key)) {
+			PyErr_SetString(PyExc_TypeError, "keywords must be strings");
+			return NULL;
+		}
+
+		s = PyString_AS_STRING(key);
+#else
+		if (!PyUnicode_Check(key)) {
+			PyErr_SetString(PyExc_TypeError, "keywords must be strings");
+			return NULL;
+		}
+
+		s = (char *)PyUnicode_AS_DATA(key);
+#endif
+
+		if (!strcmp(s, "uid")) {
+			has_uid = 1;
+			attr.flags |= LIBSSH2_SFTP_ATTR_UIDGID;
+			field = &(attr.uid);
+		} else if (!strcmp(s, "gid")) {
+			has_gid = 1;
+			field = &(attr.gid);
+		} else if (!strcmp(s, "permissions")) {
+			attr.flags |= LIBSSH2_SFTP_ATTR_PERMISSIONS;
+			field = &(attr.permissions);
+		} else if (!strcmp(s, "atime")) {
+			has_atime = 1;
+			attr.flags |= LIBSSH2_SFTP_ATTR_ACMODTIME;
+			field = &(attr.atime);
+		} else if (!strcmp(s, "mtime")) {
+			has_mtime = 1;
+			field = &(attr.mtime);
+		} else
+			return PyErr_Format(PyExc_TypeError, "'%s' is an invalid keyword "
+			                                     "argument for set_stat()", s);
+
+#if PY_MAJOR_VERSION < 3
+		if (PyInt_Check(val)) {
+			*field = PyInt_AsUnsignedLongMask(val);
+			continue;
+		}
+#endif
+
+		if (PyLong_Check(val)) {
+			*field = PyLong_AsUnsignedLongMask(val);
+			continue;
+		}
+
+		PyErr_SetString(PyExc_TypeError, "keyword arguments for set_stat() must be integers");
+		return NULL;
 	}
 
-	if (PyMapping_HasKeyString(attrs, "uid") && PyMapping_HasKeyString(attrs, "gid")) {
-		if (PyMapping_HasKeyString(attrs, "uid")) {
-			attr.flags |= LIBSSH2_SFTP_ATTR_UIDGID;
-			attr.uid = PyLong_AsLong(PyDict_GetItemString(attrs, "uid"));
-		}
-		if (PyMapping_HasKeyString(attrs, "gid")) {
-			attr.flags |= LIBSSH2_SFTP_ATTR_UIDGID;
-			attr.gid = PyLong_AsLong(PyDict_GetItemString(attrs, "gid"));
-		}
+	if (has_uid != has_gid) {
+		PyErr_SetString(PyExc_TypeError, "set_stat() requires the keyword "
+		                                 "arguments 'uid' and 'gid' or none "
+		                                 "of them");
+		return NULL;
 	}
 
-	if (PyMapping_HasKeyString(attrs, "atime") && PyMapping_HasKeyString(attrs, "ctime")) {
-		if (PyMapping_HasKeyString(attrs, "atime")) {
-			attr.flags |= LIBSSH2_SFTP_ATTR_ACMODTIME;
-			attr.atime = PyLong_AsLong(PyDict_GetItemString(attrs, "atime"));
-		}
-		if (PyMapping_HasKeyString(attrs, "mtime")) {
-			attr.flags |= LIBSSH2_SFTP_ATTR_ACMODTIME;
-			attr.mtime = PyLong_AsLong(PyDict_GetItemString(attrs, "mtime"));
-		}
+	if (has_atime != has_mtime) {
+		PyErr_SetString(PyExc_TypeError, "set_stat() requires the keyword "
+		                                 "arguments 'atime' and 'mtime' or "
+		                                 "none of them");
+		return NULL;
 	}
 
 	Py_BEGIN_ALLOW_THREADS
@@ -453,7 +502,7 @@ static PyMethodDef SFTP_methods[] =
 	{"readlink", (PyCFunction)SFTP_readlink, METH_VARARGS},
 	{"realpath", (PyCFunction)SFTP_realpath, METH_VARARGS},
 	{"get_stat", (PyCFunction)SFTP_get_stat, METH_VARARGS},
-	{"set_stat", (PyCFunction)SFTP_set_stat, METH_VARARGS},
+	{"set_stat", (PyCFunction)SFTP_set_stat, METH_VARARGS | METH_KEYWORDS},
 	{NULL, NULL}
 };
 
