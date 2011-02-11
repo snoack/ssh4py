@@ -26,11 +26,20 @@ SSH2_Session_New(LIBSSH2_SESSION *session)
 	self->opened  = 0;
 	self->socket  = Py_None;
 
-	self->callback = Py_None;
+	self->cb_ignore     = Py_None;
+	self->cb_debug      = Py_None;
+	self->cb_disconnect = Py_None;
+	self->cb_macerror   = Py_None;
+	self->cb_x11        = Py_None;
 
 	Py_INCREF(Py_None);
 	Py_INCREF(Py_None);
+	Py_INCREF(Py_None);
+	Py_INCREF(Py_None);
+	Py_INCREF(Py_None);
+	Py_INCREF(Py_None);
 
+	*libssh2_session_abstract(session) = self;
 	libssh2_banner_set(session, LIBSSH2_SSH_DEFAULT_BANNER " Python");
 
 	return self;
@@ -239,32 +248,146 @@ session_set_method(SSH2_SessionObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static int global_callback(void) {
-	return 1;
+static void ignore_callback(LIBSSH2_SESSION *session,
+                            const char *msg, int msg_len,
+                            void **abstract) {
+	PyObject *callback = ((SSH2_SessionObj *) *abstract)->cb_ignore;
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+
+	rv = PyObject_CallFunction(callback, "s#", msg, msg_len);
+	if (rv == NULL)
+		PyErr_WriteUnraisable(callback);
+	else
+		Py_DECREF(rv);
+
+	PyGILState_Release(gstate);
+}
+
+static void debug_callback(LIBSSH2_SESSION *session, int always_display,
+                           const char *msg, int msg_len,
+                           const char *lang, int lang_len,
+                           void **abstract) {
+	PyObject *callback = ((SSH2_SessionObj *) *abstract)->cb_debug;
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+
+	rv = PyObject_CallFunction(callback, "Os#s#",
+	                           always_display ? Py_True : Py_False,
+	                           msg, msg_len, lang, lang_len);
+	if (rv == NULL)
+		PyErr_WriteUnraisable(callback);
+	else
+		Py_DECREF(rv);
+
+	PyGILState_Release(gstate);
+}
+
+static void disconnect_callback(LIBSSH2_SESSION *session, int reason,
+                                const char *msg, int msg_len,
+                                const char *lang, int lang_len,
+                                void **abstract) {
+	PyObject *callback = ((SSH2_SessionObj *) *abstract)->cb_disconnect;
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+
+	rv = PyObject_CallFunction(callback, "is#s#", reason, msg, msg_len, lang, lang_len);
+	if (rv == NULL)
+		PyErr_WriteUnraisable(callback);
+	else
+		Py_DECREF(rv);
+
+	PyGILState_Release(gstate);
+}
+
+static int macerror_callback(LIBSSH2_SESSION *session,
+                             const char *packet, int packet_len,
+	                         void **abstract) {
+	PyObject *callback = ((SSH2_SessionObj *) *abstract)->cb_macerror;
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+	int ret = -1;
+
+#if PY_MAJOR_VERSION < 3
+	rv = PyObject_CallFunction(callback, "s#", packet, packet_len);
+#else
+	rv = PyObject_CallFunction(callback, "y#", packet, packet_len);
+#endif
+
+	if (rv == NULL || (ret = PyObject_Not(rv)) == -1)
+		PyErr_WriteUnraisable(callback);
+
+	Py_XDECREF(rv);
+	PyGILState_Release(gstate);
+	return ret;
+}
+
+static void x11_callback(LIBSSH2_SESSION *session, LIBSSH2_CHANNEL *channel,
+                         const char *host, int port, void **abstract) {
+	SSH2_SessionObj *session_obj = (SSH2_SessionObj *) *abstract;
+	SSH2_ChannelObj *channel_obj = SSH2_Channel_New(channel, session_obj);
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+
+	rv = PyObject_CallFunction(session_obj->cb_x11, "Osi", channel_obj, host, port);
+	if (rv == NULL)
+		PyErr_WriteUnraisable(session_obj->cb_x11);
+	else
+		Py_DECREF(rv);
+
+	Py_DECREF(channel_obj);
+	PyGILState_Release(gstate);
 }
 
 static PyObject *
-session_set_callback(SSH2_SessionObj *self, PyObject *args)
+session_callback_set(SSH2_SessionObj *self, PyObject *args)
 {
-	// Don't work, not yet
-	int cbtype;
-	PyObject* callback;
+	int type;
+	PyObject* new_callback;
+	PyObject* old_callback;
+	void *raw_callback;
 
-	if (!PyArg_ParseTuple(args, "iO:set_callback", &cbtype, &callback))
+	if (!PyArg_ParseTuple(args, "iO:callback_set", &type, &new_callback))
         return NULL;
 
-	if (!PyCallable_Check(callback)) {
-        PyErr_SetString(PyExc_TypeError, "expected PyCallable");
-        return NULL;
-    }
+	if (new_callback != Py_None && !PyCallable_Check(new_callback))
+		return PyErr_Format(PyExc_TypeError, "'%s' is not callable", new_callback->ob_type->tp_name);
 
-	Py_DECREF(self->callback);
-    Py_INCREF(callback);
-    self->callback = callback;
+	switch (type) {
+		case LIBSSH2_CALLBACK_IGNORE:
+			old_callback = self->cb_ignore;
+			self->cb_ignore = new_callback;
+			raw_callback = ignore_callback;
+			break;
+		case LIBSSH2_CALLBACK_DEBUG:
+			old_callback = self->cb_debug;
+			self->cb_debug = new_callback;
+			raw_callback = debug_callback;
+			break;
+		case LIBSSH2_CALLBACK_DISCONNECT:
+			old_callback = self->cb_disconnect;
+			self->cb_disconnect = new_callback;
+			raw_callback = disconnect_callback;
+			break;
+		case LIBSSH2_CALLBACK_MACERROR:
+			old_callback = self->cb_macerror;
+			self->cb_macerror = new_callback;
+			raw_callback = macerror_callback;
+			break;
+		case LIBSSH2_CALLBACK_X11:
+			old_callback = self->cb_x11;
+			self->cb_x11 = new_callback;
+			raw_callback = x11_callback;
+			break;
+		default:
+			PyErr_SetString(PyExc_ValueError, "invalid callback type");
+			return NULL;
+	}
 
-	libssh2_session_callback_set(self->session, cbtype, global_callback);
+	libssh2_session_callback_set(self->session, type, new_callback != Py_None ? raw_callback : NULL);
 
-    Py_RETURN_NONE;
+	Py_INCREF(new_callback);
+	return old_callback;
 }
 
 static PyObject *
@@ -413,7 +536,7 @@ static PyMethodDef session_methods[] =
 	{"set_public_key",             (PyCFunction)session_set_public_key,             METH_VARARGS},
 	{"get_methods",                (PyCFunction)session_get_methods,                METH_VARARGS},
 	{"set_method",                 (PyCFunction)session_set_method,                 METH_VARARGS},
-	{"set_callback",               (PyCFunction)session_set_callback,               METH_VARARGS},
+	{"callback_set",               (PyCFunction)session_callback_set,               METH_VARARGS},
 	{"get_blocking",               (PyCFunction)session_get_blocking,               METH_NOARGS},
 	{"set_blocking",               (PyCFunction)session_set_blocking,               METH_VARARGS},
 	{"channel",                    (PyCFunction)session_channel,                    METH_NOARGS},
@@ -446,8 +569,12 @@ session_dealloc(SSH2_SessionObj *self)
 	libssh2_session_free(self->session);
 	self->session = NULL;
 
-	Py_CLEAR(self->callback);
 	Py_CLEAR(self->socket);
+	Py_CLEAR(self->cb_ignore);
+	Py_CLEAR(self->cb_debug);
+	Py_CLEAR(self->cb_disconnect);
+	Py_CLEAR(self->cb_macerror);
+	Py_CLEAR(self->cb_x11);
 
 	PyObject_Del(self);
 }

@@ -18,9 +18,15 @@ extern  PyTypeObject      SSH2_Session_Type;
 
 typedef struct {
 	PyObject_HEAD
-	LIBSSH2_SESSION *session;
-	PyObject        *socket, *callback;
-	int             opened;
+	LIBSSH2_SESSION  *session;
+	PyObject         *socket;
+	int              opened;
+
+	PyObject         *cb_ignore;
+	PyObject         *cb_debug;
+	PyObject         *cb_disconnect;
+	PyObject         *cb_macerror;
+	PyObject         *cb_x11;
 } SSH2_SessionObj;
 
 
