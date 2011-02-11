@@ -76,8 +76,7 @@ static PyMethodDef listener_methods[] =
 static void
 listener_dealloc(SSH2_ListenerObj *self)
 {
-	Py_DECREF(self->session);
-	self->session = NULL;
+	Py_CLEAR(self->session);
 
 	PyObject_Del(self);
 }

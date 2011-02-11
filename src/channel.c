@@ -370,8 +370,7 @@ channel_dealloc(SSH2_ChannelObj *self)
 	libssh2_channel_free(self->channel);
 	self->channel = NULL;
 
-	Py_DECREF(self->session);
-	self->session = NULL;
+	Py_CLEAR(self->session);
 
     PyObject_Del(self);
 }

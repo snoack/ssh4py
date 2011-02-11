@@ -23,10 +23,13 @@ SSH2_Session_New(LIBSSH2_SESSION *session)
 		return NULL;
 
 	self->session = session;
-	self->opened = 0;
-	self->socket=NULL;
-	Py_INCREF(Py_None);
+	self->opened  = 0;
+	self->socket  = Py_None;
+
 	self->callback = Py_None;
+
+	Py_INCREF(Py_None);
+	Py_INCREF(Py_None);
 
 	libssh2_banner_set(session, LIBSSH2_SSH_DEFAULT_BANNER " Python");
 
@@ -69,8 +72,10 @@ session_startup(SSH2_SessionObj *self, PyObject *args)
 
 	CHECK_RETURN_CODE(ret, self)
 
+	Py_DECREF(self->socket);
 	Py_INCREF(sock);
-    self->socket = sock;
+
+	self->socket = sock;
 	self->opened = 1;
 
 	Py_RETURN_NONE;
@@ -441,11 +446,8 @@ session_dealloc(SSH2_SessionObj *self)
 	libssh2_session_free(self->session);
 	self->session = NULL;
 
-	Py_XDECREF(self->callback);
-	self->callback = NULL;
-
-	Py_XDECREF(self->socket);
-	self->socket = NULL;
+	Py_CLEAR(self->callback);
+	Py_CLEAR(self->socket);
 
 	PyObject_Del(self);
 }

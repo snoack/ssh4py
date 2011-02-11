@@ -60,8 +60,7 @@ static PyMethodDef SFTP_handle_methods[] =
 static void
 SFTP_handle_dealloc(SSH2_SFTP_handleObj *self)
 {
-	Py_DECREF(self->session);
-	self->session = NULL;
+	Py_CLEAR(self->session);
 
     PyObject_Del(self);
 }
