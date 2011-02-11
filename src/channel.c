@@ -146,17 +146,17 @@ channel_set_env(SSH2_ChannelObj *self, PyObject *args)
 }
 
 static PyObject *
-channel_set_blocking(SSH2_ChannelObj *self, PyObject *args)
+channel_set_blocking_(PyObject *self, PyObject *args)
 {
-	int b=1;
+	PyObject* blocking;
 
-	if (!PyArg_ParseTuple(args, "i:set_blocking", &b))
+	if (!PyArg_ParseTuple(args, "O:set_blocking", &blocking))
 		return NULL;
 
-	Py_BEGIN_ALLOW_THREADS
-	libssh2_channel_set_blocking(self->channel, b);
-	Py_END_ALLOW_THREADS
+	PyErr_Warn(PyExc_DeprecationWarning, "Channel.set_blocking() is deprecated, "
+	                                     "use the blocking property instead");
 
+	PyObject_SetAttrString(self, "blocking", blocking);
 	Py_RETURN_NONE;
 }
 
@@ -229,12 +229,6 @@ channel_flush(SSH2_ChannelObj *self)
 	CHECK_RETURN_CODE(ret, self->session)
 
 	Py_RETURN_NONE;
-}
-
-static PyObject *
-channel_eof(SSH2_ChannelObj *self)
-{
-	return PyBool_FromLong(libssh2_channel_eof(self->channel));
 }
 
 static PyObject *
@@ -343,11 +337,10 @@ static PyMethodDef channel_methods[] =
 	{"shell",           (PyCFunction)channel_shell,           METH_NOARGS},
 	{"execute",         (PyCFunction)channel_execute,         METH_VARARGS},
 	{"set_env",         (PyCFunction)channel_set_env,         METH_VARARGS},
-	{"set_blocking",    (PyCFunction)channel_set_blocking,    METH_VARARGS},
+	{"set_blocking",    (PyCFunction)channel_set_blocking_,   METH_VARARGS},
 	{"read",            (PyCFunction)channel_read,            METH_VARARGS},
 	{"write",           (PyCFunction)channel_write,           METH_VARARGS},
 	{"flush",           (PyCFunction)channel_flush,           METH_NOARGS},
-	{"eof",             (PyCFunction)channel_eof,             METH_NOARGS},
 	{"send_eof",        (PyCFunction)channel_send_eof,        METH_NOARGS},
 	{"window_adjust",   (PyCFunction)channel_window_adjust,   METH_VARARGS},
 	{"window_read",     (PyCFunction)channel_window_read,     METH_NOARGS},
@@ -356,6 +349,25 @@ static PyMethodDef channel_methods[] =
 	{"wait_closed",     (PyCFunction)channel_wait_closed,     METH_NOARGS},
 	{"wait_eof",        (PyCFunction)channel_wait_eof,        METH_NOARGS},
 	{NULL, NULL}
+};
+
+static int
+channel_set_blocking(SSH2_ChannelObj *self, PyObject *value, void *closure)
+{
+	libssh2_channel_set_blocking(self->channel, PyObject_IsTrue(value));
+	return 0;
+}
+
+PyObject *
+channel_get_eof(SSH2_ChannelObj *self, void *closure)
+{
+	return PyBool_FromLong(libssh2_channel_eof(self->channel));
+}
+
+static PyGetSetDef channel_getsets[] = {
+	{"blocking", NULL,                    (setter)channel_set_blocking, NULL},
+	{"eof",      (getter)channel_get_eof, NULL,                         NULL},
+	{NULL}
 };
 
 /*
@@ -405,7 +417,7 @@ PyTypeObject SSH2_Channel_Type = {
 	0,                           /* tp_iternext */
 	channel_methods,             /* tp_methods */
 	0,                           /* tp_members */
-	0,                           /* tp_getset */
+	channel_getsets,             /* tp_getset */
 	0,                           /* tp_base */
 	0,                           /* tp_dict */
 	0,                           /* tp_descr_get */

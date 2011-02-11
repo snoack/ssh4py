@@ -122,15 +122,18 @@ session_close(PyObject *self, PyObject *args)
 		return NULL;
 
 	PyErr_Warn(PyExc_DeprecationWarning, "Session.close() is deprecated, "
-	                                     "use Session.disconnect() intead");
+	                                     "use Session.disconnect() instead");
 
 	return PyObject_CallMethod(self, "disconnect", "is", SSH_DISCONNECT_BY_APPLICATION, description);
 }
 
 static PyObject *
-session_is_authenticated(SSH2_SessionObj *self)
+session_is_authenticated(PyObject *self)
 {
-	return PyBool_FromLong(libssh2_userauth_authenticated(self->session));
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.is_authenticated() is deprecated, "
+	                                     "use the authenticated property instead");
+
+	return PyObject_GetAttrString(self, "authenticated");
 }
 
 static PyObject *
@@ -391,22 +394,27 @@ session_callback_set(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_get_blocking(SSH2_SessionObj *self)
+session_get_blocking_(PyObject* self)
 {
-	return PyBool_FromLong(libssh2_session_get_blocking(self->session));
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.get_blocking() is deprecated, "
+	                                     "use the blocking property instead");
+
+	return PyObject_GetAttrString(self, "blocking");
 }
 
 static PyObject *
-session_set_blocking(SSH2_SessionObj *self, PyObject *args)
+session_set_blocking_(PyObject *self, PyObject *args)
 {
-	int blocking;
+	PyObject *blocking;
 
-	if (!PyArg_ParseTuple(args, "i:set_blocking", &blocking))
+	if (!PyArg_ParseTuple(args, "O:set_blocking", &blocking))
         return NULL;
 
-	libssh2_session_set_blocking(self->session, blocking);
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.set_blocking() is deprecated, "
+	                                     "use the blocking property instead");
 
-    Py_RETURN_NONE;
+	PyObject_SetAttrString(self, "blocking", blocking);
+	Py_RETURN_NONE;
 }
 
 
@@ -537,8 +545,8 @@ static PyMethodDef session_methods[] =
 	{"get_methods",                (PyCFunction)session_get_methods,                METH_VARARGS},
 	{"set_method",                 (PyCFunction)session_set_method,                 METH_VARARGS},
 	{"callback_set",               (PyCFunction)session_callback_set,               METH_VARARGS},
-	{"get_blocking",               (PyCFunction)session_get_blocking,               METH_NOARGS},
-	{"set_blocking",               (PyCFunction)session_set_blocking,               METH_VARARGS},
+	{"get_blocking",               (PyCFunction)session_get_blocking_,              METH_NOARGS},
+	{"set_blocking",               (PyCFunction)session_set_blocking_,              METH_VARARGS},
 	{"channel",                    (PyCFunction)session_channel,                    METH_NOARGS},
 	{"scp_recv",                   (PyCFunction)session_scp_recv,                   METH_VARARGS},
 	{"scp_send",                   (PyCFunction)session_scp_send,                   METH_VARARGS},
@@ -546,6 +554,32 @@ static PyMethodDef session_methods[] =
 	{"direct_tcpip",               (PyCFunction)session_direct_tcpip,               METH_VARARGS},
 	{"forward_listen",             (PyCFunction)session_forward_listen,             METH_VARARGS},
 	{NULL, NULL}
+};
+
+static PyObject *
+session_authenticated(SSH2_SessionObj *self)
+{
+	return PyBool_FromLong(libssh2_userauth_authenticated(self->session));
+}
+
+
+static PyObject *
+session_get_blocking(SSH2_SessionObj *self, void *closure)
+{
+	return PyBool_FromLong(libssh2_session_get_blocking(self->session));
+}
+
+static int
+session_set_blocking(SSH2_SessionObj *self, PyObject *value, void *closure)
+{
+	libssh2_session_set_blocking(self->session, PyObject_IsTrue(value));
+	return 0;
+}
+
+static PyGetSetDef session_getsets[] = {
+	{"authenticated", (getter)session_authenticated, NULL,                         NULL},
+	{"blocking",      (getter)session_get_blocking,  (setter)session_set_blocking, NULL},
+	{NULL}
 };
 
 static PyObject *
@@ -609,7 +643,7 @@ PyTypeObject SSH2_Session_Type = {
 	0,                           /* tp_iternext */
 	session_methods,             /* tp_methods */
 	0,                           /* tp_members */
-	0,                           /* tp_getset */
+	session_getsets,             /* tp_getset */
 	0,                           /* tp_base */
 	0,                           /* tp_dict */
 	0,                           /* tp_descr_get */
