@@ -137,15 +137,20 @@ session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 static PyObject *
 session_set_password(SSH2_SessionObj *self, PyObject *args)
 {
-	char *login;
-	char *pwd;
+	char *username;
+	char *password;
+	Py_ssize_t username_len;
+	Py_ssize_t password_len;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "ss:set_password", &login, &pwd))
+	if (!PyArg_ParseTuple(args, "s#s#:set_password", &username, &username_len,
+	                                                 &password, &password_len))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_userauth_password(self->session, login, pwd);
+	ret = libssh2_userauth_password_ex(self->session, username, username_len,
+	                                                  password, password_len,
+	                                                  NULL);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_CODE(ret, self)
@@ -156,17 +161,22 @@ session_set_password(SSH2_SessionObj *self, PyObject *args)
 static PyObject *
 session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 {
-	char *login;
+	char *username;
 	char *publickey;
 	char *privatekey;
-	char *passphrase;
+	char *passphrase = "";
+	Py_ssize_t username_len;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "sss|s:set_public_key", &login, &publickey, &privatekey, &passphrase))
+	if (!PyArg_ParseTuple(args, "s#ss|s:set_public_key", &username, &username_len,
+	                                                     &publickey, &privatekey,
+	                                                     &passphrase))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_userauth_publickey_fromfile(self->session, login, publickey, privatekey, passphrase);
+	ret = libssh2_userauth_publickey_fromfile_ex(self->session, username,
+	                                             username_len, publickey,
+	                                             privatekey, passphrase);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_CODE(ret, self)

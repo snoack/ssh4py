@@ -96,7 +96,7 @@ channel_shell(SSH2_ChannelObj *self)
 	int ret;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_channel_shell(self->channel);
+	ret = libssh2_channel_process_startup(self->channel, "shell", 5, NULL, 0);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_CODE(ret, self->session)
@@ -108,13 +108,14 @@ static PyObject *
 channel_execute(SSH2_ChannelObj *self, PyObject *args)
 {
 	char *cmd;
+	Py_ssize_t cmd_len;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "s:execute", &cmd))
+	if (!PyArg_ParseTuple(args, "s#:execute", &cmd, &cmd_len))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_channel_exec(self->channel, cmd);
+	ret = libssh2_channel_process_startup(self->channel, "exec", 4, cmd, cmd_len);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_CODE(ret, self->session)
@@ -128,13 +129,15 @@ channel_set_env(SSH2_ChannelObj *self, PyObject *args)
 {
 	char *key;
 	char *val;
+	Py_ssize_t key_len;
+	Py_ssize_t val_len;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "ss:set_env", &key, &val))
+	if (!PyArg_ParseTuple(args, "s#s#:set_env", &key, &key_len, &val, &val_len))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_channel_setenv(self->channel, key, val);
+	ret = libssh2_channel_setenv_ex(self->channel, key, key_len, val, val_len);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_CODE(ret, self->session)
