@@ -77,16 +77,19 @@ session_startup(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_close(SSH2_SessionObj *self, PyObject *args)
+session_disconnect(SSH2_SessionObj *self, PyObject *args, PyObject *kwds)
 {
-	char *reason = "end";
 	int ret;
+	int reason = SSH_DISCONNECT_BY_APPLICATION;
+	char *description = "";
+	char *lang = "";
+	static char *kwlist[] = {"reason", "description", "lang", NULL};
 
-	if (!PyArg_ParseTuple(args, "|s:close", &reason))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|iss:disconnect", kwlist, &reason, &description, &lang))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_session_disconnect(self->session, reason);
+	ret = libssh2_session_disconnect_ex(self->session, reason, description, lang);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_CODE(ret, self)
@@ -94,6 +97,20 @@ session_close(SSH2_SessionObj *self, PyObject *args)
 	self->opened = 0;
 
 	Py_RETURN_NONE;
+}
+
+static PyObject *
+session_close(PyObject *self, PyObject *args)
+{
+	char *description = "end";
+
+	if (!PyArg_ParseTuple(args, "|s:close", &description))
+		return NULL;
+
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.close() is deprecated, "
+	                                     "use Session.disconnect() intead");
+
+	return PyObject_CallMethod(self, "disconnect", "is", SSH_DISCONNECT_BY_APPLICATION, description);
 }
 
 static PyObject *
@@ -382,6 +399,7 @@ static PyMethodDef session_methods[] =
 {
 	{"set_banner",                 (PyCFunction)session_set_banner,                 METH_VARARGS},
 	{"startup",                    (PyCFunction)session_startup,                    METH_VARARGS},
+	{"disconnect",                 (PyCFunction)session_disconnect,                 METH_VARARGS | METH_KEYWORDS},
 	{"close",                      (PyCFunction)session_close,                      METH_VARARGS},
 	{"is_authenticated",           (PyCFunction)session_is_authenticated,           METH_NOARGS},
 	{"get_authentication_methods", (PyCFunction)session_get_authentication_methods, METH_VARARGS},
@@ -418,7 +436,7 @@ static void
 session_dealloc(SSH2_SessionObj *self)
 {
 	if (self->opened)
-		libssh2_session_disconnect(self->session, "end");
+		libssh2_session_disconnect(self->session, "");
 
 	libssh2_session_free(self->session);
 	self->session = NULL;
