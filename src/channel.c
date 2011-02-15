@@ -196,6 +196,24 @@ channel_read(SSH2_ChannelObj *self, PyObject *args)
 
 	if (ret < 0) {
 		Py_DECREF(buf);
+
+		/* We have to work around a bug in libssh2, that _libssh2_error() is not
+		 * called by libssh2_channel_read_ex() when the transport layer returns
+		 * LIBSSH2_ERROR_EAGAIN. So in that case the last error is not set and
+		 * the RAISE_SSH2_ERROR macro will not be able to raise the correct exception.
+		 * Thanks to Daniel Stenberg, who has fixed that issue now (see 2db4863).
+		 * However in order that our bindings work correctly with older versions
+		 * of libssh2, we need the workaround below. */
+		if (ret == LIBSSH2_ERROR_EAGAIN) {
+			PyObject *exc;
+
+			exc = PyObject_CallFunction(SSH2_Error, "s", "Would block");
+			PyObject_SetAttrString(exc, "errno", Py_BuildValue("i", ret));
+			PyErr_SetObject(SSH2_Error, exc);
+
+			return NULL;
+		}
+
 		RAISE_SSH2_ERROR(self->session)
 	}
 
