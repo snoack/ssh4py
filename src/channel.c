@@ -270,20 +270,23 @@ channel_send_eof(SSH2_ChannelObj *self)
 }
 
 static PyObject *
-channel_window_adjust(SSH2_ChannelObj *self, PyObject *args)
+channel_receive_window_adjust(SSH2_ChannelObj *self, PyObject *args)
 {
-	unsigned long ret;
 	unsigned long adjustment;
-	unsigned char force;
+	unsigned char force = 0;
+	unsigned int window;
+	int ret;
 
-	if (!PyArg_ParseTuple(args, "|iz:window_adjust", &adjustment, &force))
+	if (!PyArg_ParseTuple(args, "k|B:window_adjust", &adjustment, &force))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_channel_receive_window_adjust(self->channel, adjustment, force);
+	ret = libssh2_channel_receive_window_adjust2(self->channel, adjustment, force, &window);
 	Py_END_ALLOW_THREADS
 
-	return Py_BuildValue("k", ret);
+	CHECK_RETURN_CODE(ret, self->session)
+
+	return Py_BuildValue("k", window);
 }
 
 static PyObject *
@@ -355,26 +358,26 @@ channel_wait_eof(SSH2_ChannelObj *self)
 
 static PyMethodDef channel_methods[] =
 {
-	{"close",           (PyCFunction)channel_close,           METH_NOARGS},
-	{"pty",             (PyCFunction)channel_pty,             METH_VARARGS},
-	{"pty_size",        (PyCFunction)channel_pty_size,        METH_VARARGS},
-	{"x11_req",         (PyCFunction)channel_x11_req,         METH_VARARGS | METH_KEYWORDS},
-	{"shell",           (PyCFunction)channel_shell,           METH_NOARGS},
-	{"execute",         (PyCFunction)channel_execute,         METH_VARARGS},
-	{"set_env",         (PyCFunction)channel_set_env,         METH_VARARGS},
-	{"read",            (PyCFunction)channel_read,            METH_VARARGS},
-	{"write",           (PyCFunction)channel_write,           METH_VARARGS},
-	{"flush",           (PyCFunction)channel_flush,           METH_NOARGS},
-	{"send_eof",        (PyCFunction)channel_send_eof,        METH_NOARGS},
-	{"window_adjust",   (PyCFunction)channel_window_adjust,   METH_VARARGS},
-	{"window_read",     (PyCFunction)channel_window_read,     METH_NOARGS},
-	{"window_write",    (PyCFunction)channel_window_write,    METH_NOARGS},
-	{"get_exit_status", (PyCFunction)channel_get_exit_status, METH_NOARGS},
-	{"wait_closed",     (PyCFunction)channel_wait_closed,     METH_NOARGS},
-	{"wait_eof",        (PyCFunction)channel_wait_eof,        METH_NOARGS},
+	{"close",                 (PyCFunction)channel_close,                 METH_NOARGS},
+	{"pty",                   (PyCFunction)channel_pty,                   METH_VARARGS},
+	{"pty_size",              (PyCFunction)channel_pty_size,              METH_VARARGS},
+	{"x11_req",               (PyCFunction)channel_x11_req,               METH_VARARGS | METH_KEYWORDS},
+	{"shell",                 (PyCFunction)channel_shell,                 METH_NOARGS},
+	{"execute",               (PyCFunction)channel_execute,               METH_VARARGS},
+	{"set_env",               (PyCFunction)channel_set_env,               METH_VARARGS},
+	{"read",                  (PyCFunction)channel_read,                  METH_VARARGS},
+	{"write",                 (PyCFunction)channel_write,                 METH_VARARGS},
+	{"flush",                 (PyCFunction)channel_flush,                 METH_NOARGS},
+	{"send_eof",              (PyCFunction)channel_send_eof,              METH_NOARGS},
+	{"receive_window_adjust", (PyCFunction)channel_receive_window_adjust, METH_VARARGS},
+	{"window_read",           (PyCFunction)channel_window_read,           METH_NOARGS},
+	{"window_write",          (PyCFunction)channel_window_write,          METH_NOARGS},
+	{"get_exit_status",       (PyCFunction)channel_get_exit_status,       METH_NOARGS},
+	{"wait_closed",           (PyCFunction)channel_wait_closed,           METH_NOARGS},
+	{"wait_eof",              (PyCFunction)channel_wait_eof,              METH_NOARGS},
 
 	/* Deprecated API */
-	{"set_blocking",    (PyCFunction)channel_set_blocking_,   METH_VARARGS},
+	{"set_blocking",          (PyCFunction)channel_set_blocking_,         METH_VARARGS},
 
 	{NULL, NULL}
 };
