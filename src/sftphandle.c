@@ -60,9 +60,13 @@ static PyMethodDef SFTP_handle_methods[] =
 static void
 SFTP_handle_dealloc(SSH2_SFTP_handleObj *self)
 {
+	Py_BEGIN_ALLOW_THREADS
+	while (libssh2_sftp_close_handle(self->sftphandle) == LIBSSH2_ERROR_EAGAIN) {}
+	Py_END_ALLOW_THREADS
+
 	Py_CLEAR(self->session);
 
-    PyObject_Del(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject SSH2_SFTP_handle_Type = {

@@ -411,6 +411,10 @@ static PyGetSetDef channel_getsets[] = {
 static void
 channel_dealloc(SSH2_ChannelObj *self)
 {
+	Py_BEGIN_ALLOW_THREADS
+	while (libssh2_channel_close(self->channel) == LIBSSH2_ERROR_EAGAIN) {}
+	Py_END_ALLOW_THREADS
+
 	libssh2_channel_free(self->channel);
 	self->channel = NULL;
 

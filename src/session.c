@@ -837,8 +837,11 @@ session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static void
 session_dealloc(SSH2_SessionObj *self)
 {
-	if (self->opened)
-		libssh2_session_disconnect(self->session, "");
+	if (self->opened) {
+		Py_BEGIN_ALLOW_THREADS
+		while (libssh2_session_disconnect(self->session, "") == LIBSSH2_ERROR_EAGAIN) {}
+		Py_END_ALLOW_THREADS
+	}
 
 	libssh2_session_free(self->session);
 	self->session = NULL;
