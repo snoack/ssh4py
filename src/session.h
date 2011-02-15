@@ -27,6 +27,9 @@ typedef struct {
 	PyObject         *cb_disconnect;
 	PyObject         *cb_macerror;
 	PyObject         *cb_x11;
+
+	PyObject         *cb_passwd_changereq;
+	PyObject         *cb_kbdint_response;
 } SSH2_SessionObj;
 
 

@@ -362,7 +362,6 @@ static PyMethodDef channel_methods[] =
 	{"shell",           (PyCFunction)channel_shell,           METH_NOARGS},
 	{"execute",         (PyCFunction)channel_execute,         METH_VARARGS},
 	{"set_env",         (PyCFunction)channel_set_env,         METH_VARARGS},
-	{"set_blocking",    (PyCFunction)channel_set_blocking_,   METH_VARARGS},
 	{"read",            (PyCFunction)channel_read,            METH_VARARGS},
 	{"write",           (PyCFunction)channel_write,           METH_VARARGS},
 	{"flush",           (PyCFunction)channel_flush,           METH_NOARGS},
@@ -373,6 +372,10 @@ static PyMethodDef channel_methods[] =
 	{"get_exit_status", (PyCFunction)channel_get_exit_status, METH_NOARGS},
 	{"wait_closed",     (PyCFunction)channel_wait_closed,     METH_NOARGS},
 	{"wait_eof",        (PyCFunction)channel_wait_eof,        METH_NOARGS},
+
+	/* Deprecated API */
+	{"set_blocking",    (PyCFunction)channel_set_blocking_,   METH_VARARGS},
+
 	{NULL, NULL}
 };
 

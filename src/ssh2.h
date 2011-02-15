@@ -27,6 +27,7 @@ typedef int Py_ssize_t;
 #if PY_VERSION_HEX < 0x02060000
 #define PyBytes_FromStringAndSize PyString_FromStringAndSize
 #define PyBytes_AS_STRING PyString_AS_STRING
+#define PyBytes_AsStringAndSize PyString_AsStringAndSize
 #define _PyBytes_Resize _PyString_Resize
 
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,

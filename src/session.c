@@ -32,6 +32,11 @@ SSH2_Session_New(LIBSSH2_SESSION *session)
 	self->cb_macerror   = Py_None;
 	self->cb_x11        = Py_None;
 
+	self->cb_passwd_changereq = Py_None;
+	self->cb_kbdint_response  = Py_None;
+
+	Py_INCREF(Py_None);
+	Py_INCREF(Py_None);
 	Py_INCREF(Py_None);
 	Py_INCREF(Py_None);
 	Py_INCREF(Py_None);
@@ -137,22 +142,6 @@ session_is_authenticated(PyObject *self)
 }
 
 static PyObject *
-session_get_authentication_methods(SSH2_SessionObj *self, PyObject *args)
-{
-	char *user;
-	char *ret;
-	Py_ssize_t len;
-
-	if (!PyArg_ParseTuple(args, "s#:get_authentication_methods", &user, &len))
-		return NULL;
-
-	if ((ret = libssh2_userauth_list(self->session, user, len)) == NULL)
-		Py_RETURN_NONE;
-
-	return Py_BuildValue("s", ret);
-}
-
-static PyObject *
 session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 {
 	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5;
@@ -169,23 +158,115 @@ session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_set_password(SSH2_SessionObj *self, PyObject *args)
+session_userauth_list(SSH2_SessionObj *self, PyObject *args)
+{
+	char *username;
+	char *ret;
+	Py_ssize_t username_len;
+
+	if (!PyArg_ParseTuple(args, "s#:userauth_list", &username, &username_len))
+		return NULL;
+
+	if ((ret = libssh2_userauth_list(self->session, username, username_len)) == NULL)
+		Py_RETURN_NONE;
+
+	return Py_BuildValue("s", ret);
+}
+
+static PyObject *
+session_get_authentication_methods(PyObject *self, PyObject *args)
+{
+	char *username;
+	Py_ssize_t username_len;
+
+	if (!PyArg_ParseTuple(args, "s#:get_authentication_methods", &username, &username_len))
+		return NULL;
+
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.get_authentication_methods() "
+	                                     "is deprecated, use "
+	                                     "Session.userauth_list() instead");
+
+	return PyObject_CallMethod(self, "userauth_list", "s#", username, username_len);
+}
+
+static void passwd_changereq_callback(LIBSSH2_SESSION *session,
+                                      char **newpw, int *newpw_len,
+                                      void **abstract)
+{
+	PyObject *callback = ((SSH2_SessionObj *) *abstract)->cb_passwd_changereq;
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+	char *s;
+	int ret;
+
+	if ((rv = PyObject_CallObject(callback, NULL)) == NULL)
+		goto failure;
+
+#if PY_MAJOR_VERSION < 3
+	ret = PyString_AsStringAndSize(rv, &s, newpw_len);
+#else
+	{
+		PyObject *enc;
+
+		if ((enc = PyUnicode_AsEncodedString(rv, NULL, "strict")) == NULL)
+			goto failure;
+
+		ret = PyBytes_AsStringAndSize(enc, &s, newpw_len);
+		Py_DECREF(enc);
+	}
+#endif
+	Py_DECREF(rv);
+
+	if (ret == 0) {
+		*newpw = strndup(s, *newpw_len);
+		goto exit;
+	}
+
+failure:
+	PyErr_WriteUnraisable(callback);
+exit:
+	PyGILState_Release(gstate);
+}
+
+static PyObject *
+session_userauth_password(SSH2_SessionObj *self, PyObject *args)
 {
 	char *username;
 	char *password;
 	Py_ssize_t username_len;
 	Py_ssize_t password_len;
+	PyObject *callback = NULL;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "s#s#:set_password", &username, &username_len,
-	                                                 &password, &password_len))
+	if (!PyArg_ParseTuple(args, "s#s#|O:userauth_password", &username, &username_len,
+	                                                        &password, &password_len,
+	                                                        &callback))
 		return NULL;
 
-	Py_BEGIN_ALLOW_THREADS
-	ret = libssh2_userauth_password_ex(self->session, username, username_len,
-	                                                  password, password_len,
-	                                                  NULL);
-	Py_END_ALLOW_THREADS
+	if (callback != NULL) {
+		if (!PyCallable_Check(callback))
+			return PyErr_Format(PyExc_TypeError, "'%s' is not callable", callback->ob_type->tp_name);
+
+		Py_DECREF(self->cb_passwd_changereq);
+		Py_INCREF(callback);
+		self->cb_passwd_changereq = callback;
+
+		Py_BEGIN_ALLOW_THREADS
+		ret = libssh2_userauth_password_ex(self->session, username, username_len,
+		                                                  password, password_len,
+		                                                  passwd_changereq_callback);
+		Py_END_ALLOW_THREADS
+
+		Py_DECREF(self->cb_passwd_changereq);
+		Py_INCREF(Py_None);
+		self->cb_passwd_changereq = Py_None;
+	} else {
+		Py_BEGIN_ALLOW_THREADS
+		ret = libssh2_userauth_password_ex(self->session, username, username_len,
+		                                                  password, password_len,
+		                                                  NULL);
+		Py_END_ALLOW_THREADS
+	}
 
 	CHECK_RETURN_CODE(ret, self)
 
@@ -193,7 +274,26 @@ session_set_password(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_set_public_key(SSH2_SessionObj *self, PyObject *args)
+session_set_password(PyObject *self, PyObject *args)
+{
+	char *username;
+	char *password;
+	Py_ssize_t username_len;
+	Py_ssize_t password_len;
+
+	if (!PyArg_ParseTuple(args, "s#s#:set_password", &username, &username_len,
+	                                                 &password, &password_len))
+		return NULL;
+
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.set_password() is deprecated, "
+	                                     "use Session.userauth_password() instead");
+
+	return PyObject_CallMethod(self, "userauth_password", "s#s#",
+	                           username, username_len, password, password_len);
+}
+
+static PyObject *
+session_userauth_publickey_fromfile(SSH2_SessionObj *self, PyObject *args)
 {
 	char *username;
 	char *publickey;
@@ -202,9 +302,9 @@ session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 	Py_ssize_t username_len;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "s#ss|s:set_public_key", &username, &username_len,
-	                                                     &publickey, &privatekey,
-	                                                     &passphrase))
+	if (!PyArg_ParseTuple(args, "s#ss|s:userauth_publickey_fromfile",
+	                      &username, &username_len, &publickey, &privatekey,
+	                      &passphrase))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -218,6 +318,251 @@ session_set_public_key(SSH2_SessionObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *
+session_set_public_key(PyObject *self, PyObject *args)
+{
+	char *username;
+	char *publickey;
+	char *privatekey;
+	char *passphrase = "";
+	Py_ssize_t username_len;
+
+	if (!PyArg_ParseTuple(args, "s#ss|s:set_public_key", &username, &username_len,
+	                                                     &publickey, &privatekey,
+	                                                     &passphrase))
+		return NULL;
+
+	PyErr_Warn(PyExc_DeprecationWarning, "Session.set_public_key() is deprecated, "
+	                                     "use Session.userauth_publickey_fromfile() "
+	                                     "instead");
+
+	return PyObject_CallMethod(self, "userauth_password", "s#sss",
+	                           username, username_len,
+	                           publickey, privatekey, passphrase);
+}
+
+static int publickey_sign_callback(LIBSSH2_SESSION *session,
+                                   unsigned char **sig, size_t *sig_len,
+                                   const unsigned char *data, size_t data_len,
+                                   void **abstract)
+{
+	PyObject *callback = (PyObject *) *abstract;
+	PyObject *rv;
+	PyGILState_STATE gstate = PyGILState_Ensure();
+	char *s;
+	int ret = -1;
+
+#if PY_MAJOR_VERSION < 3
+	rv = PyObject_CallFunction(callback, "s#", data, data_len);
+#else
+	rv = PyObject_CallFunction(callback, "y#", data, data_len);
+#endif
+
+	if (rv == NULL)
+		goto failure;
+
+	ret = PyBytes_AsStringAndSize(rv, &s, (Py_ssize_t *) sig_len);
+	Py_DECREF(rv);
+
+	if (ret == 0) {
+		*sig = (unsigned char*) strndup(s, *sig_len);
+		goto exit;
+	}
+
+failure:
+	PyErr_WriteUnraisable(callback);
+exit:
+	PyGILState_Release(gstate);
+	return ret;
+}
+
+
+static PyObject *
+session_userauth_publickey(SSH2_SessionObj *self, PyObject *args)
+{
+	char *username;
+	char *pubkeydata;
+	Py_ssize_t pubkeydata_len;
+	PyObject *callback;
+	int ret;
+
+#if PY_MAJOR_VERSION < 3
+	if (!PyArg_ParseTuple(args, "ss#O:userauth_publickey", &username, &pubkeydata, &pubkeydata_len, &callback))
+#else
+	if (!PyArg_ParseTuple(args, "sy#O:userauth_publickey", &username, &pubkeydata, &pubkeydata_len, &callback))
+#endif
+		return NULL;
+
+	if (!PyCallable_Check(callback))
+		return PyErr_Format(PyExc_TypeError, "'%s' is not callable", callback->ob_type->tp_name);
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_userauth_publickey(self->session, username,
+	                                 (unsigned char*)pubkeydata, pubkeydata_len,
+	                                 publickey_sign_callback, (void **)&callback);
+	Py_END_ALLOW_THREADS
+
+	CHECK_RETURN_CODE(ret, self)
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *
+session_userauth_hostbased_fromfile(SSH2_SessionObj *self, PyObject *args)
+{
+	char *username;
+	char *publickey;
+	char *privatekey;
+	char *passphrase;
+	char *hostname;
+	char *local_username = NULL;
+	Py_ssize_t username_len;
+	Py_ssize_t hostname_len;
+	Py_ssize_t local_username_len;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "s#ssss#|s#:userauth_hostbased_fromfile",
+	                      &username, &username_len,
+	                      &publickey, &privatekey, &passphrase,
+	                      &hostname, &hostname_len,
+	                      &local_username, &local_username_len))
+		return NULL;
+
+	if (local_username == NULL) {
+		local_username     = username;
+		local_username_len = username_len;
+	}
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_userauth_hostbased_fromfile_ex(self->session,
+	                                             username, username_len,
+	                                             publickey, privatekey, passphrase,
+	                                             hostname, hostname_len,
+	                                             local_username, local_username_len);
+	Py_END_ALLOW_THREADS
+
+	CHECK_RETURN_CODE(ret, self)
+
+	Py_RETURN_NONE;
+}
+
+static void kbdint_response_callback(const char* name, int name_len,
+                                     const char* instruction, int instruction_len,
+									 int num_prompts,
+                                     const LIBSSH2_USERAUTH_KBDINT_PROMPT* prompts,
+                                     LIBSSH2_USERAUTH_KBDINT_RESPONSE* responses,
+                                     void **abstract)
+{
+	PyGILState_STATE gstate = PyGILState_Ensure();
+	PyObject *callback = ((SSH2_SessionObj*) *abstract)->cb_kbdint_response;
+	PyObject *lprompts = PyList_New(num_prompts);
+	PyObject *rv = NULL;
+	PyObject *it = NULL;
+	int i;
+
+	for (i = 0; i < num_prompts; i++) {
+		PyList_SET_ITEM(lprompts, i, Py_BuildValue("(s#O)", prompts[i].text,
+		                                                    prompts[i].length,
+		                                                    prompts[i].echo ? Py_True : Py_False));
+	}
+
+	rv = PyObject_CallFunction(callback, "s#s#O", name, name_len, instruction, instruction_len, lprompts);
+	Py_DECREF(lprompts);
+
+	if (rv == NULL)
+		goto failure;
+
+	it = PyObject_GetIter(rv);
+	Py_DECREF(rv);
+
+	if (it == NULL)
+		goto failure;
+
+	for (i = 0; i < num_prompts; i++) {
+		PyObject *item = PyIter_Next(it);
+		char *s;
+		Py_ssize_t length;
+		int ret;
+
+		if (item == NULL) {
+			Py_DECREF(it);
+
+			if (!PyErr_Occurred()) {
+				PyErr_Format(PyExc_ValueError, "callback returned %i reponse(s), "
+				                               "but %i prompt(s) were given", i, num_prompts);
+			}
+
+			goto failure;
+		}
+
+#if PY_MAJOR_VERSION < 3
+		ret = PyString_AsStringAndSize(item, &s, &length);
+#else
+		{
+			PyObject *enc;
+
+			if ((enc = PyUnicode_AsEncodedString(item, NULL, "strict")) == NULL) {
+				Py_DECREF(item);
+				Py_DECREF(it);
+
+				goto failure;
+			}
+
+			ret = PyBytes_AsStringAndSize(enc, &s, &length);
+			Py_DECREF(enc);
+		}
+#endif
+		Py_DECREF(item);
+
+		if (ret == -1) {
+			Py_DECREF(it);
+			goto failure;
+		}
+
+		responses[i].text = strndup(s, length);
+		responses[i].length = length;
+	}
+
+	Py_DECREF(it);
+	goto exit;
+
+failure:
+	PyErr_WriteUnraisable(callback);
+exit:
+	PyGILState_Release(gstate);
+}
+
+static PyObject *
+session_userauth_keyboard_interactive(SSH2_SessionObj *self, PyObject *args)
+{
+	char *username;
+	Py_ssize_t username_len;
+	PyObject *callback;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "s#O:userauth_keyboard_interactive",
+	                      &username, &username_len, &callback))
+		return NULL;
+
+	if (!PyCallable_Check(callback))
+		return PyErr_Format(PyExc_TypeError, "'%s' is not callable", callback->ob_type->tp_name);
+
+	Py_DECREF(self->cb_kbdint_response);
+	Py_INCREF(callback);
+	self->cb_kbdint_response = callback;
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_userauth_keyboard_interactive_ex(self->session, username, username_len, kbdint_response_callback);
+	Py_END_ALLOW_THREADS
+
+	Py_DECREF(self->cb_kbdint_response);
+	Py_INCREF(Py_None);
+	self->cb_kbdint_response = Py_None;
+
+	CHECK_RETURN_CODE(ret, self)
+
+	Py_RETURN_NONE;
+}
 
 static PyObject *
 session_get_methods(SSH2_SessionObj *self, PyObject *args)
@@ -533,26 +878,35 @@ session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 
 static PyMethodDef session_methods[] =
 {
-	{"set_banner",                 (PyCFunction)session_set_banner,                 METH_VARARGS},
-	{"startup",                    (PyCFunction)session_startup,                    METH_VARARGS},
-	{"disconnect",                 (PyCFunction)session_disconnect,                 METH_VARARGS | METH_KEYWORDS},
-	{"close",                      (PyCFunction)session_close,                      METH_VARARGS},
-	{"is_authenticated",           (PyCFunction)session_is_authenticated,           METH_NOARGS},
-	{"get_authentication_methods", (PyCFunction)session_get_authentication_methods, METH_VARARGS},
-	{"get_fingerprint",            (PyCFunction)session_get_fingerprint,            METH_VARARGS},
-	{"set_password",               (PyCFunction)session_set_password,               METH_VARARGS},
-	{"set_public_key",             (PyCFunction)session_set_public_key,             METH_VARARGS},
-	{"get_methods",                (PyCFunction)session_get_methods,                METH_VARARGS},
-	{"set_method",                 (PyCFunction)session_set_method,                 METH_VARARGS},
-	{"callback_set",               (PyCFunction)session_callback_set,               METH_VARARGS},
-	{"get_blocking",               (PyCFunction)session_get_blocking_,              METH_NOARGS},
-	{"set_blocking",               (PyCFunction)session_set_blocking_,              METH_VARARGS},
-	{"channel",                    (PyCFunction)session_channel,                    METH_NOARGS},
-	{"scp_recv",                   (PyCFunction)session_scp_recv,                   METH_VARARGS},
-	{"scp_send",                   (PyCFunction)session_scp_send,                   METH_VARARGS},
-	{"sftp",                       (PyCFunction)session_sftp,                       METH_NOARGS},
-	{"direct_tcpip",               (PyCFunction)session_direct_tcpip,               METH_VARARGS},
-	{"forward_listen",             (PyCFunction)session_forward_listen,             METH_VARARGS},
+	{"set_banner",                    (PyCFunction)session_set_banner,                    METH_VARARGS},
+	{"startup",                       (PyCFunction)session_startup,                       METH_VARARGS},
+	{"disconnect",                    (PyCFunction)session_disconnect,                    METH_VARARGS | METH_KEYWORDS},
+	{"get_fingerprint",               (PyCFunction)session_get_fingerprint,               METH_VARARGS},
+	{"userauth_list",                 (PyCFunction)session_userauth_list,                 METH_VARARGS},
+	{"userauth_password",             (PyCFunction)session_userauth_password,             METH_VARARGS},
+	{"userauth_publickey_fromfile",   (PyCFunction)session_userauth_publickey_fromfile,   METH_VARARGS},
+	{"userauth_publickey",            (PyCFunction)session_userauth_publickey,            METH_VARARGS},
+	{"userauth_hostbased_fromfile",   (PyCFunction)session_userauth_hostbased_fromfile,   METH_VARARGS},
+	{"userauth_keyboard_interactive", (PyCFunction)session_userauth_keyboard_interactive, METH_VARARGS},
+	{"get_methods",                   (PyCFunction)session_get_methods,                   METH_VARARGS},
+	{"set_method",                    (PyCFunction)session_set_method,                    METH_VARARGS},
+	{"callback_set",                  (PyCFunction)session_callback_set,                  METH_VARARGS},
+	{"channel",                       (PyCFunction)session_channel,                       METH_NOARGS},
+	{"scp_recv",                      (PyCFunction)session_scp_recv,                      METH_VARARGS},
+	{"scp_send",                      (PyCFunction)session_scp_send,                      METH_VARARGS},
+	{"sftp",                          (PyCFunction)session_sftp,                          METH_NOARGS},
+	{"direct_tcpip",                  (PyCFunction)session_direct_tcpip,                  METH_VARARGS},
+	{"forward_listen",                (PyCFunction)session_forward_listen,                METH_VARARGS},
+
+	/* Deprecated API */
+	{"close",                         (PyCFunction)session_close,                         METH_VARARGS},
+	{"is_authenticated",              (PyCFunction)session_is_authenticated,              METH_NOARGS},
+	{"get_authentication_methods",    (PyCFunction)session_get_authentication_methods,    METH_VARARGS},
+	{"set_password",                  (PyCFunction)session_set_password,                  METH_VARARGS},
+	{"set_public_key",                (PyCFunction)session_set_public_key,                METH_VARARGS},
+	{"get_blocking",                  (PyCFunction)session_get_blocking_,                 METH_NOARGS},
+	{"set_blocking",                  (PyCFunction)session_set_blocking_,                 METH_VARARGS},
+
 	{NULL, NULL}
 };
 
@@ -609,6 +963,8 @@ session_dealloc(SSH2_SessionObj *self)
 	Py_CLEAR(self->cb_disconnect);
 	Py_CLEAR(self->cb_macerror);
 	Py_CLEAR(self->cb_x11);
+	Py_CLEAR(self->cb_passwd_changereq);
+	Py_CLEAR(self->cb_kbdint_response);
 
 	PyObject_Del(self);
 }
