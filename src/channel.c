@@ -46,7 +46,7 @@ channel_close(SSH2_ChannelObj *self)
 }
 
 static PyObject *
-channel_pty(SSH2_ChannelObj *self, PyObject *args)
+channel_request_pty(SSH2_ChannelObj *self, PyObject *args)
 {
 	char *term;
 	char *modes = NULL;
@@ -58,7 +58,7 @@ channel_pty(SSH2_ChannelObj *self, PyObject *args)
 	int pw = 0;
 	int ph = 0;
 
-	if (!PyArg_ParseTuple(args, "s#|s#iiii:pty", &term, &lt, &modes, &lm, &w, &h, &pw, &ph))
+	if (!PyArg_ParseTuple(args, "s#|s#iiii:request_pty", &term, &lt, &modes, &lm, &w, &h, &pw, &ph))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -71,14 +71,14 @@ channel_pty(SSH2_ChannelObj *self, PyObject *args)
 }
 
 static PyObject *
-channel_pty_size(SSH2_ChannelObj *self, PyObject *args)
+channel_request_pty_size(SSH2_ChannelObj *self, PyObject *args)
 {
 	int ret;
 	int w = 80;
 	int h = 24;
 
 
-	if (!PyArg_ParseTuple(args, "ii:pty_size", &w, &h))
+	if (!PyArg_ParseTuple(args, "ii:request_pty_size", &w, &h))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -128,6 +128,8 @@ channel_shell(SSH2_ChannelObj *self)
 	Py_RETURN_NONE;
 }
 
+/* Can not be called just 'Channel.exec' like in the C API,
+ * because of 'exec' is a reserved keyword in Python 2. */
 static PyObject *
 channel_execute(SSH2_ChannelObj *self, PyObject *args)
 {
@@ -149,7 +151,7 @@ channel_execute(SSH2_ChannelObj *self, PyObject *args)
 
 
 static PyObject *
-channel_set_env(SSH2_ChannelObj *self, PyObject *args)
+channel_setenv(SSH2_ChannelObj *self, PyObject *args)
 {
 	char *key;
 	char *val;
@@ -157,7 +159,7 @@ channel_set_env(SSH2_ChannelObj *self, PyObject *args)
 	Py_ssize_t val_len;
 	int ret;
 
-	if (!PyArg_ParseTuple(args, "s#s#:set_env", &key, &key_len, &val, &val_len))
+	if (!PyArg_ParseTuple(args, "s#s#:setenv", &key, &key_len, &val, &val_len))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -344,12 +346,12 @@ channel_wait_eof(SSH2_ChannelObj *self)
 static PyMethodDef channel_methods[] =
 {
 	{"close",                 (PyCFunction)channel_close,                 METH_NOARGS},
-	{"pty",                   (PyCFunction)channel_pty,                   METH_VARARGS},
-	{"pty_size",              (PyCFunction)channel_pty_size,              METH_VARARGS},
+	{"request_pty",           (PyCFunction)channel_request_pty,           METH_VARARGS},
+	{"request_pty_size",      (PyCFunction)channel_request_pty_size,      METH_VARARGS},
 	{"x11_req",               (PyCFunction)channel_x11_req,               METH_VARARGS | METH_KEYWORDS},
 	{"shell",                 (PyCFunction)channel_shell,                 METH_NOARGS},
 	{"execute",               (PyCFunction)channel_execute,               METH_VARARGS},
-	{"set_env",               (PyCFunction)channel_set_env,               METH_VARARGS},
+	{"setenv",                (PyCFunction)channel_setenv,                METH_VARARGS},
 	{"read",                  (PyCFunction)channel_read,                  METH_VARARGS},
 	{"write",                 (PyCFunction)channel_write,                 METH_VARARGS},
 	{"flush",                 (PyCFunction)channel_flush,                 METH_NOARGS},

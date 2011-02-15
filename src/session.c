@@ -52,11 +52,11 @@ SSH2_Session_New(LIBSSH2_SESSION *session)
 
 
 static PyObject *
-session_set_banner(SSH2_SessionObj *self, PyObject *args)
+session_banner_set(SSH2_SessionObj *self, PyObject *args)
 {
 	char *banner;
 
-	if (!PyArg_ParseTuple(args, "s:set_banner", &banner))
+	if (!PyArg_ParseTuple(args, "s:banner_set", &banner))
 		return NULL;
 
 	libssh2_banner_set(self->session, banner);
@@ -119,12 +119,12 @@ session_disconnect(SSH2_SessionObj *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
+session_hostkey_hash(SSH2_SessionObj *self, PyObject *args)
 {
 	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5;
 	const char *hash;
 
-	if (!PyArg_ParseTuple(args, "|i:get_fingerprint", &hashtype))
+	if (!PyArg_ParseTuple(args, "|i:hostkey_hash", &hashtype))
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
@@ -489,7 +489,7 @@ session_get_methods(SSH2_SessionObj *self, PyObject *args)
 	int method_type;
 	const char *ret;
 
-	if (!PyArg_ParseTuple(args, "i:get_method", &method_type))
+	if (!PyArg_ParseTuple(args, "i:methods", &method_type))
 		return NULL;
 
 	if ((ret = libssh2_session_methods(self->session, method_type)) == NULL)
@@ -499,13 +499,13 @@ session_get_methods(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_set_method(SSH2_SessionObj *self, PyObject *args)
+session_method_pref(SSH2_SessionObj *self, PyObject *args)
 {
 	int ret;
 	int method;
 	char *pref;
 
-	if (!PyArg_ParseTuple(args, "is:set_method", &method, &pref))
+	if (!PyArg_ParseTuple(args, "is:method_pref", &method, &pref))
         return NULL;
 
 	ret = libssh2_session_method_pref(self->session, method, pref);
@@ -774,18 +774,18 @@ session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 
 static PyMethodDef session_methods[] =
 {
-	{"set_banner",                    (PyCFunction)session_set_banner,                    METH_VARARGS},
+	{"banner_set",                    (PyCFunction)session_banner_set,                    METH_VARARGS},
 	{"startup",                       (PyCFunction)session_startup,                       METH_VARARGS},
 	{"disconnect",                    (PyCFunction)session_disconnect,                    METH_VARARGS | METH_KEYWORDS},
-	{"get_fingerprint",               (PyCFunction)session_get_fingerprint,               METH_VARARGS},
+	{"hostkey_hash",                  (PyCFunction)session_hostkey_hash,                  METH_VARARGS},
 	{"userauth_list",                 (PyCFunction)session_userauth_list,                 METH_VARARGS},
 	{"userauth_password",             (PyCFunction)session_userauth_password,             METH_VARARGS},
 	{"userauth_publickey_fromfile",   (PyCFunction)session_userauth_publickey_fromfile,   METH_VARARGS},
 	{"userauth_publickey",            (PyCFunction)session_userauth_publickey,            METH_VARARGS},
 	{"userauth_hostbased_fromfile",   (PyCFunction)session_userauth_hostbased_fromfile,   METH_VARARGS},
 	{"userauth_keyboard_interactive", (PyCFunction)session_userauth_keyboard_interactive, METH_VARARGS},
-	{"get_methods",                   (PyCFunction)session_get_methods,                   METH_VARARGS},
-	{"set_method",                    (PyCFunction)session_set_method,                    METH_VARARGS},
+	{"methods",                       (PyCFunction)session_get_methods,                   METH_VARARGS},
+	{"method_pref",                   (PyCFunction)session_method_pref,                   METH_VARARGS},
 	{"callback_set",                  (PyCFunction)session_callback_set,                  METH_VARARGS},
 	{"channel",                       (PyCFunction)session_channel,                       METH_NOARGS},
 	{"scp_recv",                      (PyCFunction)session_scp_recv,                      METH_VARARGS},
