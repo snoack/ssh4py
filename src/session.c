@@ -802,13 +802,15 @@ session_scp_send(SSH2_SessionObj *self, PyObject *args)
 	char *path;
 	int mode;
 	unsigned long filesize;
+	long mtime = 0;
+	long atime = 0;
 	LIBSSH2_CHANNEL *channel;
 
-	if (!PyArg_ParseTuple(args, "sik:scp_send", &path, &mode, &filesize))
+	if (!PyArg_ParseTuple(args, "sik|ll:scp_send", &path, &mode, &filesize, &mtime, &atime))
         return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	channel = libssh2_scp_send(self->session, path, mode, filesize);
+	channel = libssh2_scp_send_ex(self->session, path, mode, filesize, mtime, atime);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_POINTER(channel, self)
