@@ -67,6 +67,8 @@ initlibssh2(void)
     if (PyModule_AddObject(module, "Error", SSH2_Error) != 0)
         goto error;
 
+	PyModule_AddStringConstant(module, "__version__", MODULE_VERSION);
+
 	// for getFingerprint
 	PyModule_AddIntConstant(module, "FINGERPRINT_MD5",   0x0000);
 	PyModule_AddIntConstant(module, "FINGERPRINT_SHA1",  0x0001);
