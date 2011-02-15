@@ -119,29 +119,6 @@ session_disconnect(SSH2_SessionObj *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
-session_close(PyObject *self, PyObject *args)
-{
-	char *description = "end";
-
-	if (!PyArg_ParseTuple(args, "|s:close", &description))
-		return NULL;
-
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.close() is deprecated, "
-	                                     "use Session.disconnect() instead");
-
-	return PyObject_CallMethod(self, "disconnect", "is", SSH_DISCONNECT_BY_APPLICATION, description);
-}
-
-static PyObject *
-session_is_authenticated(PyObject *self)
-{
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.is_authenticated() is deprecated, "
-	                                     "use the authenticated property instead");
-
-	return PyObject_GetAttrString(self, "authenticated");
-}
-
-static PyObject *
 session_get_fingerprint(SSH2_SessionObj *self, PyObject *args)
 {
 	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5;
@@ -171,22 +148,6 @@ session_userauth_list(SSH2_SessionObj *self, PyObject *args)
 		Py_RETURN_NONE;
 
 	return Py_BuildValue("s", ret);
-}
-
-static PyObject *
-session_get_authentication_methods(PyObject *self, PyObject *args)
-{
-	char *username;
-	Py_ssize_t username_len;
-
-	if (!PyArg_ParseTuple(args, "s#:get_authentication_methods", &username, &username_len))
-		return NULL;
-
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.get_authentication_methods() "
-	                                     "is deprecated, use "
-	                                     "Session.userauth_list() instead");
-
-	return PyObject_CallMethod(self, "userauth_list", "s#", username, username_len);
 }
 
 static void passwd_changereq_callback(LIBSSH2_SESSION *session,
@@ -274,25 +235,6 @@ session_userauth_password(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_set_password(PyObject *self, PyObject *args)
-{
-	char *username;
-	char *password;
-	Py_ssize_t username_len;
-	Py_ssize_t password_len;
-
-	if (!PyArg_ParseTuple(args, "s#s#:set_password", &username, &username_len,
-	                                                 &password, &password_len))
-		return NULL;
-
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.set_password() is deprecated, "
-	                                     "use Session.userauth_password() instead");
-
-	return PyObject_CallMethod(self, "userauth_password", "s#s#",
-	                           username, username_len, password, password_len);
-}
-
-static PyObject *
 session_userauth_publickey_fromfile(SSH2_SessionObj *self, PyObject *args)
 {
 	char *username;
@@ -316,29 +258,6 @@ session_userauth_publickey_fromfile(SSH2_SessionObj *self, PyObject *args)
 	CHECK_RETURN_CODE(ret, self)
 
 	Py_RETURN_NONE;
-}
-
-static PyObject *
-session_set_public_key(PyObject *self, PyObject *args)
-{
-	char *username;
-	char *publickey;
-	char *privatekey;
-	char *passphrase = "";
-	Py_ssize_t username_len;
-
-	if (!PyArg_ParseTuple(args, "s#ss|s:set_public_key", &username, &username_len,
-	                                                     &publickey, &privatekey,
-	                                                     &passphrase))
-		return NULL;
-
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.set_public_key() is deprecated, "
-	                                     "use Session.userauth_publickey_fromfile() "
-	                                     "instead");
-
-	return PyObject_CallMethod(self, "userauth_password", "s#sss",
-	                           username, username_len,
-	                           publickey, privatekey, passphrase);
 }
 
 static int publickey_sign_callback(LIBSSH2_SESSION *session,
@@ -739,31 +658,6 @@ session_callback_set(SSH2_SessionObj *self, PyObject *args)
 }
 
 static PyObject *
-session_get_blocking_(PyObject* self)
-{
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.get_blocking() is deprecated, "
-	                                     "use the blocking property instead");
-
-	return PyObject_GetAttrString(self, "blocking");
-}
-
-static PyObject *
-session_set_blocking_(PyObject *self, PyObject *args)
-{
-	PyObject *blocking;
-
-	if (!PyArg_ParseTuple(args, "O:set_blocking", &blocking))
-        return NULL;
-
-	PyErr_Warn(PyExc_DeprecationWarning, "Session.set_blocking() is deprecated, "
-	                                     "use the blocking property instead");
-
-	PyObject_SetAttrString(self, "blocking", blocking);
-	Py_RETURN_NONE;
-}
-
-
-static PyObject *
 session_channel(SSH2_SessionObj *self)
 {
 	LIBSSH2_CHANNEL *channel;
@@ -899,16 +793,6 @@ static PyMethodDef session_methods[] =
 	{"sftp",                          (PyCFunction)session_sftp,                          METH_NOARGS},
 	{"direct_tcpip",                  (PyCFunction)session_direct_tcpip,                  METH_VARARGS},
 	{"forward_listen",                (PyCFunction)session_forward_listen,                METH_VARARGS},
-
-	/* Deprecated API */
-	{"close",                         (PyCFunction)session_close,                         METH_VARARGS},
-	{"is_authenticated",              (PyCFunction)session_is_authenticated,              METH_NOARGS},
-	{"get_authentication_methods",    (PyCFunction)session_get_authentication_methods,    METH_VARARGS},
-	{"set_password",                  (PyCFunction)session_set_password,                  METH_VARARGS},
-	{"set_public_key",                (PyCFunction)session_set_public_key,                METH_VARARGS},
-	{"get_blocking",                  (PyCFunction)session_get_blocking_,                 METH_NOARGS},
-	{"set_blocking",                  (PyCFunction)session_set_blocking_,                 METH_VARARGS},
-
 	{NULL, NULL}
 };
 

@@ -170,21 +170,6 @@ channel_set_env(SSH2_ChannelObj *self, PyObject *args)
 }
 
 static PyObject *
-channel_set_blocking_(PyObject *self, PyObject *args)
-{
-	PyObject* blocking;
-
-	if (!PyArg_ParseTuple(args, "O:set_blocking", &blocking))
-		return NULL;
-
-	PyErr_Warn(PyExc_DeprecationWarning, "Channel.set_blocking() is deprecated, "
-	                                     "use the blocking property instead");
-
-	PyObject_SetAttrString(self, "blocking", blocking);
-	Py_RETURN_NONE;
-}
-
-static PyObject *
 channel_read(SSH2_ChannelObj *self, PyObject *args)
 {
 	int ret;
@@ -375,10 +360,6 @@ static PyMethodDef channel_methods[] =
 	{"get_exit_status",       (PyCFunction)channel_get_exit_status,       METH_NOARGS},
 	{"wait_closed",           (PyCFunction)channel_wait_closed,           METH_NOARGS},
 	{"wait_eof",              (PyCFunction)channel_wait_eof,              METH_NOARGS},
-
-	/* Deprecated API */
-	{"set_blocking",          (PyCFunction)channel_set_blocking_,         METH_VARARGS},
-
 	{NULL, NULL}
 };
 
