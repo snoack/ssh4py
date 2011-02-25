@@ -367,7 +367,7 @@ session_userauth_hostbased_fromfile(SSH2_SessionObj *self, PyObject *args)
 
 static void kbdint_response_callback(const char* name, int name_len,
                                      const char* instruction, int instruction_len,
-									 int num_prompts,
+                                     int num_prompts,
                                      const LIBSSH2_USERAUTH_KBDINT_PROMPT* prompts,
                                      LIBSSH2_USERAUTH_KBDINT_RESPONSE* responses,
                                      void **abstract)
@@ -506,7 +506,7 @@ session_method_pref(SSH2_SessionObj *self, PyObject *args)
 	char *pref;
 
 	if (!PyArg_ParseTuple(args, "is:method_pref", &method, &pref))
-        return NULL;
+		return NULL;
 
 	ret = libssh2_session_method_pref(self->session, method, pref);
 
@@ -569,7 +569,7 @@ static void disconnect_callback(LIBSSH2_SESSION *session, int reason,
 
 static int macerror_callback(LIBSSH2_SESSION *session,
                              const char *packet, int packet_len,
-	                         void **abstract) {
+                             void **abstract) {
 	PyObject *callback = ((SSH2_SessionObj *) *abstract)->cb_macerror;
 	PyObject *rv;
 	PyGILState_STATE gstate = PyGILState_Ensure();
@@ -615,7 +615,7 @@ session_callback_set(SSH2_SessionObj *self, PyObject *args)
 	void *raw_callback;
 
 	if (!PyArg_ParseTuple(args, "iO:callback_set", &type, &new_callback))
-        return NULL;
+		return NULL;
 
 	if (new_callback != Py_None && !PyCallable_Check(new_callback))
 		return PyErr_Format(PyExc_TypeError, "'%s' is not callable", new_callback->ob_type->tp_name);
@@ -668,7 +668,7 @@ session_channel(SSH2_SessionObj *self)
 
 	CHECK_RETURN_POINTER(channel, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self);
+	return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -676,10 +676,9 @@ session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 {
 	char *path;
 	LIBSSH2_CHANNEL *channel;
-	//~ struct stat sb;
 
 	if (!PyArg_ParseTuple(args, "s:scp_recv", &path))
-        return NULL;
+		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_scp_recv(self->session, path, NULL); // &sb
@@ -687,7 +686,7 @@ session_scp_recv(SSH2_SessionObj *self, PyObject *args)
 
 	CHECK_RETURN_POINTER(channel, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self);
+	return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -701,7 +700,7 @@ session_scp_send(SSH2_SessionObj *self, PyObject *args)
 	LIBSSH2_CHANNEL *channel;
 
 	if (!PyArg_ParseTuple(args, "sik|ll:scp_send", &path, &mode, &filesize, &mtime, &atime))
-        return NULL;
+		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_scp_send_ex(self->session, path, mode, filesize, mtime, atime);
@@ -709,7 +708,7 @@ session_scp_send(SSH2_SessionObj *self, PyObject *args)
 
 	CHECK_RETURN_POINTER(channel, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self);
+	return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -721,11 +720,10 @@ session_sftp(SSH2_SessionObj *self)
 	sftp = libssh2_sftp_init(self->session);
 	Py_END_ALLOW_THREADS
 
-	if (sftp == NULL) {
-        Py_RETURN_NONE;
-    }
+	if (sftp == NULL)
+		Py_RETURN_NONE;
 
-    return (PyObject *)SSH2_SFTP_New(sftp, self);
+	return (PyObject *)SSH2_SFTP_New(sftp, self);
 }
 
 
@@ -740,7 +738,7 @@ session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 	LIBSSH2_CHANNEL *channel;
 
 	if (!PyArg_ParseTuple(args, "si|si:direct_tcpip", &host, &port, &shost, &sport))
-        return NULL;
+		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	channel = libssh2_channel_direct_tcpip_ex(self->session, host, port, shost, sport);
@@ -748,7 +746,7 @@ session_direct_tcpip(SSH2_SessionObj *self, PyObject *args)
 
 	CHECK_RETURN_POINTER(channel, self)
 
-    return (PyObject *)SSH2_Channel_New(channel, self);
+	return (PyObject *)SSH2_Channel_New(channel, self);
 }
 
 static PyObject *
@@ -761,7 +759,7 @@ session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 	LIBSSH2_LISTENER *listener;
 
 	if (!PyArg_ParseTuple(args, "siii:forward_listen", &host, &port, &bound_port, &queue_maxsize))
-        return NULL;
+		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
 	listener = libssh2_channel_forward_listen_ex(self->session, host, port, bound_port, queue_maxsize);
@@ -769,7 +767,7 @@ session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 
 	CHECK_RETURN_POINTER(listener, self)
 
-    return (PyObject *)SSH2_Listener_New(listener, self);
+	return (PyObject *)SSH2_Listener_New(listener, self);
 }
 
 static PyMethodDef session_methods[] =

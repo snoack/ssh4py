@@ -37,12 +37,9 @@ PyInit_libssh2(void)
 initlibssh2(void)
 #endif
 {
-    static void *SSH2_API[SSH2_API_pointers];
-    PyObject *c_api_object;
-    PyObject *module;
-
-    //~ ERR_load_SSH2_strings();
-    //~ OpenSSL_add_all_algorithms();
+	static void *SSH2_API[SSH2_API_pointers];
+	PyObject *c_api_object;
+	PyObject *module;
 
 #if PY_MAJOR_VERSION >= 3
 	if ((module = PyModule_Create(&SSH2_moduledef)) == NULL)
@@ -52,20 +49,20 @@ initlibssh2(void)
 		return;
 #endif
 
-    /* Initialize the C API pointer array */
-    SSH2_API[SSH2_Session_New_NUM]     = (void *)SSH2_Session_New;
-    SSH2_API[SSH2_Channel_New_NUM]     = (void *)SSH2_Channel_New;
-    SSH2_API[SSH2_SFTP_New_NUM]        = (void *)SSH2_SFTP_New;
-    SSH2_API[SSH2_SFTP_handle_New_NUM] = (void *)SSH2_SFTP_handle_New;
-    c_api_object = PyCObject_FromVoidPtr((void *)SSH2_API, NULL);
-    if (c_api_object != NULL)
-        PyModule_AddObject(module, "_C_API", c_api_object);
+	/* Initialize the C API pointer array */
+	SSH2_API[SSH2_Session_New_NUM]     = (void *)SSH2_Session_New;
+	SSH2_API[SSH2_Channel_New_NUM]     = (void *)SSH2_Channel_New;
+	SSH2_API[SSH2_SFTP_New_NUM]        = (void *)SSH2_SFTP_New;
+	SSH2_API[SSH2_SFTP_handle_New_NUM] = (void *)SSH2_SFTP_handle_New;
+	c_api_object = PyCObject_FromVoidPtr((void *)SSH2_API, NULL);
+	if (c_api_object != NULL)
+		PyModule_AddObject(module, "_C_API", c_api_object);
 
-    SSH2_Error = PyErr_NewException("libssh2.Error", NULL, NULL);
-    if (SSH2_Error == NULL)
-        goto error;
-    if (PyModule_AddObject(module, "Error", SSH2_Error) != 0)
-        goto error;
+	SSH2_Error = PyErr_NewException("libssh2.Error", NULL, NULL);
+	if (SSH2_Error == NULL)
+		goto error;
+	if (PyModule_AddObject(module, "Error", SSH2_Error) != 0)
+		goto error;
 
 	PyModule_AddStringConstant(module, "__version__", MODULE_VERSION);
 

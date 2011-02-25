@@ -420,7 +420,7 @@ channel_dealloc(SSH2_ChannelObj *self)
 
 	Py_CLEAR(self->session);
 
-    PyObject_Del(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject SSH2_Channel_Type = {

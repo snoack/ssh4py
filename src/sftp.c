@@ -525,7 +525,7 @@ SFTP_dealloc(SSH2_SFTPObj *self)
 {
 	Py_CLEAR(self->session);
 
-    PyObject_Del(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject SSH2_SFTP_Type = {

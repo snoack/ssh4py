@@ -42,7 +42,7 @@ listener_accept(SSH2_ListenerObj *self)
 
 	CHECK_RETURN_POINTER(channel, self->session)
 
-    return (PyObject *)SSH2_Channel_New(channel, self->session);
+	return (PyObject *)SSH2_Channel_New(channel, self->session);
 }
 
 static PyObject *
