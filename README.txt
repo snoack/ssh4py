@@ -1,7 +1,7 @@
 == Depenendencies ==
 
 - Python (2.4 or later)
-- libssh2 (1.2.5 or later)
+- libssh2 (1.2.2 or later)
 - zlib (1.2.x or later)
 
 == Installation ==

@@ -260,6 +260,7 @@ session_userauth_publickey_fromfile(SSH2_SessionObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+#if LIBSSH2_VERSION_NUM >= 0x010203
 static int publickey_sign_callback(LIBSSH2_SESSION *session,
                                    unsigned char **sig, size_t *sig_len,
                                    const unsigned char *data, size_t data_len,
@@ -325,6 +326,7 @@ session_userauth_publickey(SSH2_SessionObj *self, PyObject *args)
 
 	Py_RETURN_NONE;
 }
+#endif
 
 static PyObject *
 session_userauth_hostbased_fromfile(SSH2_SessionObj *self, PyObject *args)
@@ -779,7 +781,9 @@ static PyMethodDef session_methods[] =
 	{"userauth_list",                 (PyCFunction)session_userauth_list,                 METH_VARARGS},
 	{"userauth_password",             (PyCFunction)session_userauth_password,             METH_VARARGS},
 	{"userauth_publickey_fromfile",   (PyCFunction)session_userauth_publickey_fromfile,   METH_VARARGS},
+#if LIBSSH2_VERSION_NUM >= 0x010203
 	{"userauth_publickey",            (PyCFunction)session_userauth_publickey,            METH_VARARGS},
+#endif
 	{"userauth_hostbased_fromfile",   (PyCFunction)session_userauth_hostbased_fromfile,   METH_VARARGS},
 	{"userauth_keyboard_interactive", (PyCFunction)session_userauth_keyboard_interactive, METH_VARARGS},
 	{"methods",                       (PyCFunction)session_get_methods,                   METH_VARARGS},

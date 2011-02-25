@@ -117,7 +117,6 @@ initlibssh2(void)
 	PyModule_AddIntConstant(module, "ERROR_PASSWORD_EXPIRED",        LIBSSH2_ERROR_PASSWORD_EXPIRED);
 	PyModule_AddIntConstant(module, "ERROR_FILE",                    LIBSSH2_ERROR_FILE);
 	PyModule_AddIntConstant(module, "ERROR_METHOD_NONE",             LIBSSH2_ERROR_METHOD_NONE);
-	PyModule_AddIntConstant(module, "ERROR_AUTHENTICATION_FAILED",   LIBSSH2_ERROR_AUTHENTICATION_FAILED);
 	PyModule_AddIntConstant(module, "ERROR_PUBLICKEY_UNRECOGNIZED",  LIBSSH2_ERROR_PUBLICKEY_UNRECOGNIZED);
 	PyModule_AddIntConstant(module, "ERROR_PUBLICKEY_UNVERIFIED",    LIBSSH2_ERROR_PUBLICKEY_UNVERIFIED);
 	PyModule_AddIntConstant(module, "ERROR_CHANNEL_OUTOFORDER",      LIBSSH2_ERROR_CHANNEL_OUTOFORDER);
@@ -142,7 +141,10 @@ initlibssh2(void)
 	PyModule_AddIntConstant(module, "ERROR_BAD_USE",                 LIBSSH2_ERROR_BAD_USE);
 	PyModule_AddIntConstant(module, "ERROR_COMPRESS",                LIBSSH2_ERROR_COMPRESS);
 	PyModule_AddIntConstant(module, "ERROR_OUT_OF_BOUNDARY",         LIBSSH2_ERROR_OUT_OF_BOUNDARY);
+#if LIBSSH2_VERSION_NUM >= 0x010203
+	PyModule_AddIntConstant(module, "ERROR_AUTHENTICATION_FAILED",   LIBSSH2_ERROR_AUTHENTICATION_FAILED);
 	PyModule_AddIntConstant(module, "ERROR_AGENT_PROTOCOL",          LIBSSH2_ERROR_AGENT_PROTOCOL);
+#endif
 
 	PyModule_AddIntConstant(module, "STDERR", SSH_EXTENDED_DATA_STDERR);
 
