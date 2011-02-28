@@ -1,7 +1,7 @@
 import sys
 from distutils.core import setup, Extension
 
-VERSION = '0.7'
+VERSION = '0.7.1'
 
 setup(name='libssh2-python',
       version=VERSION,
