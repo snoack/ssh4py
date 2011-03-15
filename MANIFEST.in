@@ -1,1 +1,2 @@
-recursive-include src *.c* *.h
+recursive-include src *.c *.h
+include COPYING
