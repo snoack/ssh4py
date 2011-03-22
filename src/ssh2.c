@@ -18,7 +18,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
  */
-#define SSH2_MODULE
 #include "ssh2.h"
 
 
@@ -51,8 +50,6 @@ PyInit_libssh2(void)
 initlibssh2(void)
 #endif
 {
-	static void *SSH2_API[SSH2_API_pointers];
-	PyObject *c_api_object;
 	PyObject *module;
 
 #if PY_MAJOR_VERSION >= 3
@@ -62,15 +59,6 @@ initlibssh2(void)
 	if ((module = Py_InitModule("libssh2", NULL)) == NULL)
 		return;
 #endif
-
-	/* Initialize the C API pointer array */
-	SSH2_API[SSH2_Session_New_NUM]     = (void *)SSH2_Session_New;
-	SSH2_API[SSH2_Channel_New_NUM]     = (void *)SSH2_Channel_New;
-	SSH2_API[SSH2_SFTP_New_NUM]        = (void *)SSH2_SFTP_New;
-	SSH2_API[SSH2_SFTP_handle_New_NUM] = (void *)SSH2_SFTP_handle_New;
-	c_api_object = PyCObject_FromVoidPtr((void *)SSH2_API, NULL);
-	if (c_api_object != NULL)
-		PyModule_AddObject(module, "_C_API", c_api_object);
 
 	SSH2_Error = PyErr_NewException("libssh2.Error", NULL, NULL);
 	if (SSH2_Error == NULL)

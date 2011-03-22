@@ -24,17 +24,17 @@
 #include <Python.h>
 #include <libssh2.h>
 
-extern  int       init_SSH2_SFTP_handle   (PyObject *);
-
-extern  PyTypeObject      SSH2_SFTP_handle_Type;
-
-#define SSH2_SFTP_handle_Check(v) ((v)->ob_type == &SSH2_SFTP_handle_Type)
-
 typedef struct {
 	PyObject_HEAD
 	LIBSSH2_SFTP_HANDLE *sftphandle;
 	SSH2_SessionObj     *session;
 } SSH2_SFTP_handleObj;
 
+extern  SSH2_SFTP_handleObj  *SSH2_SFTP_handle_New  (LIBSSH2_SFTP_HANDLE *, SSH2_SessionObj *);
+extern  int                  init_SSH2_SFTP_handle  (PyObject *);
+
+extern  PyTypeObject         SSH2_SFTP_handle_Type;
+
+#define SSH2_SFTP_handle_Check(v) ((v)->ob_type == &SSH2_SFTP_handle_Type)
 
 #endif

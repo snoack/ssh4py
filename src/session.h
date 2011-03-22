@@ -24,12 +24,6 @@
 #include <Python.h>
 #include <libssh2.h>
 
-extern  int       init_SSH2_Session   (PyObject *);
-
-extern  PyTypeObject      SSH2_Session_Type;
-
-#define SSH2_Session_Check(v) ((v)->ob_type == &SSH2_Session_Type)
-
 typedef struct {
 	PyObject_HEAD
 	LIBSSH2_SESSION  *session;
@@ -46,5 +40,11 @@ typedef struct {
 	PyObject         *cb_kbdint_response;
 } SSH2_SessionObj;
 
+extern  SSH2_SessionObj  *SSH2_Session_New  (LIBSSH2_SESSION *);
+extern  int              init_SSH2_Session  (PyObject *);
+
+extern  PyTypeObject     SSH2_Session_Type;
+
+#define SSH2_Session_Check(v) ((v)->ob_type == &SSH2_Session_Type)
 
 #endif

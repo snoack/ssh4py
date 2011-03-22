@@ -25,17 +25,17 @@
 #include <libssh2.h>
 #include "session.h"
 
-extern  int       init_SSH2_Channel   (PyObject *);
-
-extern  PyTypeObject      SSH2_Channel_Type;
-
-#define SSH2_Channel_Check(v) ((v)->ob_type == &SSH2_Channel_Type)
-
 typedef struct {
 	PyObject_HEAD
 	LIBSSH2_CHANNEL *channel;
 	SSH2_SessionObj *session;
 } SSH2_ChannelObj;
 
+extern  SSH2_ChannelObj  *SSH2_Channel_New  (LIBSSH2_CHANNEL *, SSH2_SessionObj *);
+extern  int              init_SSH2_Channel  (PyObject *);
+
+extern  PyTypeObject     SSH2_Channel_Type;
+
+#define SSH2_Channel_Check(v) ((v)->ob_type == &SSH2_Channel_Type)
 
 #endif
