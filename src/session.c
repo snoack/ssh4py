@@ -687,21 +687,41 @@ session_channel(SSH2_SessionObj *self)
 }
 
 static PyObject *
-session_scp_recv(SSH2_SessionObj *self, PyObject *args)
+session_scp_recv(SSH2_SessionObj *self, PyObject *args, PyObject *kwds)
 {
 	char *path;
 	LIBSSH2_CHANNEL *channel;
+	struct stat sb;
+	PyObject* get_stat = NULL;
+	int get_stat_is_true = 0;
+	PyObject* chan;
+	static char *kwlist[] = {"path", "get_stat", NULL};
 
-	if (!PyArg_ParseTuple(args, "s:scp_recv", &path))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|O:scp_recv", kwlist,
+	                                 &path, &get_stat))
+		return NULL;
+	if (get_stat && (get_stat_is_true = PyObject_IsTrue(get_stat)) < 0)
 		return NULL;
 
 	Py_BEGIN_ALLOW_THREADS
-	channel = libssh2_scp_recv(self->session, path, NULL); // &sb
+	channel = libssh2_scp_recv(self->session, path,
+	                           get_stat_is_true ? &sb : 0);
 	Py_END_ALLOW_THREADS
 
 	CHECK_RETURN_POINTER(channel, self)
 
-	return (PyObject *)SSH2_Channel_New(channel, self);
+	/* Return a tuple of the channel and (size, mode, mtime, atime)
+	 * of the remote file if the get_stat argument is true else return
+	 * a tuple of the channel and None. */
+	chan = (PyObject *)SSH2_Channel_New(channel, self);
+	if (!get_stat_is_true)
+		return Py_BuildValue("(OO)", chan, Py_None);
+
+	return Py_BuildValue("(O(LlLL))", chan,
+	                     (PY_LONG_LONG)sb.st_size,
+	                     (long)sb.st_mode,
+	                     (PY_LONG_LONG)sb.st_mtime,
+	                     (PY_LONG_LONG)sb.st_atime);
 }
 
 static PyObject *
@@ -833,7 +853,7 @@ static PyMethodDef session_methods[] =
 	{"method_pref",                   (PyCFunction)session_method_pref,                   METH_VARARGS},
 	{"callback_set",                  (PyCFunction)session_callback_set,                  METH_VARARGS},
 	{"channel",                       (PyCFunction)session_channel,                       METH_NOARGS},
-	{"scp_recv",                      (PyCFunction)session_scp_recv,                      METH_VARARGS},
+	{"scp_recv",                      (PyCFunction)session_scp_recv,                      METH_VARARGS | METH_KEYWORDS},
 	{"scp_send",                      (PyCFunction)session_scp_send,                      METH_VARARGS},
 	{"sftp",                          (PyCFunction)session_sftp,                          METH_NOARGS},
 	{"direct_tcpip",                  (PyCFunction)session_direct_tcpip,                  METH_VARARGS},
