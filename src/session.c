@@ -785,6 +785,36 @@ session_forward_listen(SSH2_SessionObj *self, PyObject *args)
 	return (PyObject *)SSH2_Listener_New(listener, self);
 }
 
+#if LIBSSH2_VERSION_NUM >= 0x010205
+static PyObject *
+session_keepalive_config(SSH2_SessionObj *self, PyObject *args)
+{
+	int want_reply;
+	unsigned int interval;
+
+	if (!PyArg_ParseTuple(args, "iI:keepalive_config", &want_reply, &interval))
+		return NULL;
+
+
+	libssh2_keepalive_config(self->session, want_reply, interval);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *
+session_keepalive_send(SSH2_SessionObj *self)
+{
+	int seconds_to_next;
+	int ret;
+
+	ret = libssh2_keepalive_send(self->session, &seconds_to_next);
+
+	CHECK_RETURN_CODE(ret, self)
+
+	return Py_BuildValue("i", seconds_to_next);
+}
+#endif
+
 static PyMethodDef session_methods[] =
 {
 	{"banner_set",                    (PyCFunction)session_banner_set,                    METH_VARARGS},
@@ -808,6 +838,10 @@ static PyMethodDef session_methods[] =
 	{"sftp",                          (PyCFunction)session_sftp,                          METH_NOARGS},
 	{"direct_tcpip",                  (PyCFunction)session_direct_tcpip,                  METH_VARARGS},
 	{"forward_listen",                (PyCFunction)session_forward_listen,                METH_VARARGS},
+#if LIBSSH2_VERSION_NUM >= 0x010205
+	{"keepalive_config",              (PyCFunction)session_keepalive_config,              METH_VARARGS},
+	{"keepalive_send",                (PyCFunction)session_keepalive_send,                METH_NOARGS},
+#endif
 	{NULL, NULL}
 };
 
