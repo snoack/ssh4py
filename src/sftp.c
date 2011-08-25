@@ -205,7 +205,11 @@ SFTP_write(SSH2_SFTPObj *self, PyObject *args)
 
 	CHECK_RETURN_CODE(ret, self->session)
 
+#if PY_VERSION_HEX < 0x02050000
+	return Py_BuildValue("i", ret);
+#else
 	return Py_BuildValue("n", ret);
+#endif
 }
 
 static PyObject *
@@ -221,7 +225,11 @@ SFTP_tell(SSH2_SFTPObj *self, PyObject *args)
 	ret = libssh2_sftp_tell(handle->sftphandle);
 	Py_END_ALLOW_THREADS
 
+#if PY_VERSION_HEX < 0x02050000
+	return Py_BuildValue("i", ret);
+#else
 	return Py_BuildValue("n", ret);
+#endif
 }
 
 static PyObject *
