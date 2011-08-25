@@ -74,7 +74,7 @@ get_attrs(LIBSSH2_SFTP_ATTRIBUTES *attr)
 
 
 static PyObject *
-SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
+SFTP_open_dir(SSH2_SFTPObj *self, PyObject *args)
 {
 	LIBSSH2_SFTP_HANDLE *handle;
 	char *path;
@@ -89,7 +89,7 @@ SFTP_open_dir(SSH2_SFTPObj *self, SSH2_SessionObj *session, PyObject *args)
 
 	CHECK_RETURN_POINTER(handle, self->session)
 
-	return (PyObject *)SSH2_SFTP_handle_New(handle, session);
+	return (PyObject *)SSH2_SFTP_handle_New(handle, self->session);
 }
 
 static PyObject *
