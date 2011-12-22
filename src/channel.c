@@ -162,6 +162,25 @@ channel_execute(SSH2_ChannelObj *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *
+channel_subsystem(SSH2_ChannelObj *self, PyObject *args)
+{
+	char *subsys;
+	Py_ssize_t subsys_len;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "s#:subsystem", &subsys, &subsys_len))
+		return NULL;
+
+	Py_BEGIN_ALLOW_THREADS
+	ret = libssh2_channel_process_startup(self->channel, "subsystem", 9, subsys, subsys_len);
+	Py_END_ALLOW_THREADS
+
+	CHECK_RETURN_CODE(ret, self->session)
+
+	Py_RETURN_NONE;
+}
+
 
 static PyObject *
 channel_setenv(SSH2_ChannelObj *self, PyObject *args)
@@ -382,6 +401,7 @@ static PyMethodDef channel_methods[] =
 	{"x11_req",               (PyCFunction)channel_x11_req,               METH_VARARGS | METH_KEYWORDS},
 	{"shell",                 (PyCFunction)channel_shell,                 METH_NOARGS},
 	{"execute",               (PyCFunction)channel_execute,               METH_VARARGS},
+	{"subsystem",             (PyCFunction)channel_subsystem,             METH_VARARGS},
 	{"setenv",                (PyCFunction)channel_setenv,                METH_VARARGS},
 	{"read",                  (PyCFunction)channel_read,                  METH_VARARGS},
 	{"write",                 (PyCFunction)channel_write,                 METH_VARARGS},
