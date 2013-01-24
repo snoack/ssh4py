@@ -134,7 +134,7 @@ session_disconnect(SSH2_SessionObj *self, PyObject *args, PyObject *kwds)
 static PyObject *
 session_hostkey_hash(SSH2_SessionObj *self, PyObject *args)
 {
-	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5;
+	int hashtype = LIBSSH2_HOSTKEY_HASH_MD5, size;
 	const char *hash;
 
 	if (!PyArg_ParseTuple(args, "|i:hostkey_hash", &hashtype))
@@ -144,10 +144,16 @@ session_hostkey_hash(SSH2_SessionObj *self, PyObject *args)
 	hash = libssh2_hostkey_hash(self->session, hashtype);
 	Py_END_ALLOW_THREADS
 
+	switch(hashtype) {
+	case LIBSSH2_HOSTKEY_HASH_MD5:  size = 16; break;
+	case LIBSSH2_HOSTKEY_HASH_SHA1: size = 20; break;
+	default:                        size = 0;
+	}
+
 #if PY_MAJOR_VERSION < 3
-	return Py_BuildValue("s", hash);
+	return Py_BuildValue("s#", hash, size);
 #else
-	return Py_BuildValue("y", hash);
+	return Py_BuildValue("y#", hash, size);
 #endif
 }
 
