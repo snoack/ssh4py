@@ -144,7 +144,11 @@ session_hostkey_hash(SSH2_SessionObj *self, PyObject *args)
 	hash = libssh2_hostkey_hash(self->session, hashtype);
 	Py_END_ALLOW_THREADS
 
+#if PY_MAJOR_VERSION < 3
 	return Py_BuildValue("s", hash);
+#else
+	return Py_BuildValue("y", hash);
+#endif
 }
 
 static PyObject *
