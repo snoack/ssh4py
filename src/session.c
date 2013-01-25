@@ -885,9 +885,36 @@ session_set_blocking(SSH2_SessionObj *self, PyObject *value, void *closure)
 	return 0;
 }
 
+#if LIBSSH2_VERSION_NUM >= 0x010209
+static PyObject *
+session_get_timeout(SSH2_SessionObj *self, void *closure)
+{
+	return Py_BuildValue("l", libssh2_session_get_timeout(self->session));
+}
+
+static int
+session_set_timeout(SSH2_SessionObj *self, PyObject *value, void *closure)
+{
+	long timeout = PyLong_AsLong(value);
+
+	if (timeout == -1 && PyErr_Occurred()) {
+		/* older versions of python don't set TypeError */
+		if (PyErr_ExceptionMatches(PyExc_SystemError))
+			PyErr_SetString(PyExc_TypeError, "an integer is required");
+		return -1;
+	}
+
+	libssh2_session_set_timeout(self->session, timeout);
+	return 0;
+}
+#endif
+
 static PyGetSetDef session_getsets[] = {
 	{"authenticated", (getter)session_authenticated, NULL,                         NULL},
 	{"blocking",      (getter)session_get_blocking,  (setter)session_set_blocking, NULL},
+#if LIBSSH2_VERSION_NUM >= 0x010209
+	{"timeout",       (getter)session_get_timeout,   (setter)session_set_timeout,  NULL},
+#endif
 	{NULL}
 };
 
