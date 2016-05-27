@@ -238,11 +238,14 @@ channel_read(SSH2_ChannelObj *self, PyObject *args)
 		 * of libssh2, we need the workaround below. */
 		if (ret == LIBSSH2_ERROR_EAGAIN) {
 			PyObject *exc;
+			PyObject *value;
 
 			exc = PyObject_CallFunction(SSH2_Error, "s", "Would block");
-			PyObject_SetAttrString(exc, "errno", Py_BuildValue("i", ret));
+			value=Py_BuildValue("i", ret);
+			PyObject_SetAttrString(exc, "errno", value);
 			PyErr_SetObject(SSH2_Error, exc);
-
+			Py_DECREF(exc);
+			Py_DECREF(value);
 			return NULL;
 		}
 
