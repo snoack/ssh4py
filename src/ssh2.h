@@ -58,13 +58,15 @@ extern PyObject *SSH2_Error;
 	int       _errmsg_len = 0; \
 	int       _errno; \
 	PyObject* _exc; \
+	PyObject* _value;\
 \
 	_errno = libssh2_session_last_error(session_obj->session, &_errmsg, &_errmsg_len, 0); \
 	_exc   = PyObject_CallFunction(SSH2_Error, "s#", _errmsg, _errmsg_len); \
-\
-	PyObject_SetAttrString(_exc, "errno", Py_BuildValue("i", _errno)); \
+	_value=Py_BuildValue("i", _errno);\
+	PyObject_SetAttrString(_exc, "errno", _value); \
 	PyErr_SetObject(SSH2_Error, _exc); \
-\
+	Py_DECREF(_exc);\
+	Py_DECREF(_value);\
 	return NULL; \
 }
 
